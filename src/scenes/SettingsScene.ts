@@ -4,9 +4,9 @@ import { OrbView } from '../game/OrbView';
 import type { ModoEntrada } from '../input/PlayerInput';
 import { borrarRanking } from '../storage/leaderboard';
 import { HoldButton } from '../ui/HoldButton';
-import { ESTILOS, encajar } from '../ui/text';
+import { ESTILOS } from '../ui/text';
 import { RESOLUCIONES, cambiarResolucion, nombreResolucion } from '../pantalla';
-import { ESCENAS, NOMBRE_MODO, getInput, mostrarCamara } from './shared';
+import { ESCENAS, NOMBRE_MODO, clicable, getInput, mostrarCamara } from './shared';
 
 // Ajustes del dispositivo (se guardan en localStorage).
 // Cada botón se activa manteniendo el orbe encima, con un clic o toque, o con su número en el teclado.
@@ -74,7 +74,13 @@ export class SettingsScene extends Phaser.Scene {
     const bVolver = crear(1, 4, () => this.scene.start(ESCENAS.menu));
     bVolver.setTexto('Volver  [Esc]');
 
-    this.estado = this.add.text(cx, CONFIG.alto - 28, '', ESTILOS.ayuda).setOrigin(0.5);
+    // Si la cámara falló, un clic en este texto (o R) la reintenta.
+    this.estado = clicable(
+      this.add
+        .text(cx, CONFIG.alto - 12, '', { ...ESTILOS.ayuda, align: 'center', wordWrap: { width: CONFIG.ancho - 120 } })
+        .setOrigin(0.5, 1),
+      () => this.reintentarCamara(),
+    );
 
     const kb = this.input.keyboard!;
     const atajos: [string, HoldButton][] = [
@@ -90,6 +96,7 @@ export class SettingsScene extends Phaser.Scene {
       ['ESC', bVolver],
     ];
     for (const [tecla, boton] of atajos) kb.on(`keydown-${tecla}`, () => boton.activar());
+    kb.on('keydown-R', () => this.reintentarCamara());
 
     // El navegador solo deja pasar a pantalla completa con un clic o una tecla, no con el orbe.
     const fallo = () => this.avisar('El navegador no dejó pasar a pantalla completa: probá con un clic en el botón.');
@@ -108,7 +115,8 @@ export class SettingsScene extends Phaser.Scene {
     const a = input.config;
     const camara = input.modo === 'pose' || input.modo === 'manos';
 
-    this.bEntrada.setTexto(`Entrada: ${NOMBRE_MODO[a.modoEntrada]}  [1]`);
+    const sinCamara = input.estado === 'error' && a.modoEntrada !== 'teclado';
+    this.bEntrada.setTexto(`Entrada: ${NOMBRE_MODO[a.modoEntrada]}${sinCamara ? ' · sin cámara' : ''}  [1]`);
     this.bPunto.setTexto(`Punto de Pose: ${a.puntoPose === 'torso' ? 'centro del torso' : 'muñeca más alta'}  [2]`);
     this.bPunto.habilitado = a.modoEntrada === 'pose';
     this.bEspejar.setTexto(`Espejar cámara: ${a.espejar ? 'sí' : 'no'}  [3]`);
@@ -128,13 +136,19 @@ export class SettingsScene extends Phaser.Scene {
 
     for (const b of this.botones) b.update(input, delta);
     this.orbe.update(delta);
-    encajar(this.estado.setText(time < this.avisoHasta ? this.aviso : this.textoEstado()), CONFIG.ancho - 40);
+    this.estado.setText(time < this.avisoHasta ? this.aviso : this.textoEstado());
   }
 
   private cambiarModo() {
     const input = getInput(this);
     const i = MODOS.indexOf(input.config.modoEntrada);
     input.aplicarAjustes({ modoEntrada: MODOS[(i + 1) % MODOS.length] }).then(() => mostrarCamara(this, true));
+  }
+
+  private reintentarCamara() {
+    const input = getInput(this);
+    if (input.estado !== 'error' || input.config.modoEntrada === 'teclado') return;
+    input.start().then(() => mostrarCamara(this, true));
   }
 
   /** Pasa a la resolución siguiente y vuelve a crear la escena, para que los textos se rehagan nítidos. */
@@ -175,9 +189,9 @@ export class SettingsScene extends Phaser.Scene {
     const input = getInput(this);
     switch (input.estado) {
       case 'cargando':
-        return 'Cargando la cámara y el modelo…';
+        return 'Esperando la cámara… Si el navegador pregunta, tocá «Permitir».';
       case 'error':
-        return `No se pudo usar la cámara: ${input.error} Se usa el teclado.`;
+        return `${input.error}\nMientras, se usa el teclado · Clic acá o [R] para reintentar`;
       case 'lista':
         if (input.modo === 'teclado') return 'Teclado: WASD mueve a P1, flechas a P2 · P simula que falta un jugador';
         return `Cámara lista · ${input.modo === 'pose' ? 'personas' : 'manos'} detectadas: ${input.countCrudo}`;

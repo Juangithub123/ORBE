@@ -1,7 +1,7 @@
 import { CONFIG } from '../config';
 import { calcOrb, type OrbState, type Vec2 } from '../game/orb';
 import { guardarAjustes, type Ajustes, type Zona } from '../storage/settings';
-import { CameraInput } from './CameraInput';
+import { CameraInput, SinAccesoCamara, VideoNoArranca, cerrarCamara } from './CameraInput';
 import { CameraPreview } from './CameraPreview';
 import { HandsInput } from './HandsInput';
 import { KeyboardInput } from './KeyboardInput';
@@ -38,10 +38,14 @@ export class InputManager {
   private fuente: PlayerInput | null = null;
   private modoActivo: ModoEntrada | null = null;
   private desdeCambio = 0;
+  /** Cuenta los arranques: el resultado de un arranque viejo (por ejemplo, un aviso de permiso que se
+   * cerró después de cambiar de modo) se descarta y no pisa al modo elegido después. */
+  private intento = 0;
 
   constructor(private ajustes: Ajustes) {
     this.orb = calcOrb(this.p1, this.p2, CONFIG);
     this.preview = new CameraPreview(() => (this.fuente instanceof CameraInput ? this.fuente.vista : null), ajustes);
+    this.vigilarPermiso();
   }
 
   get modo() {
@@ -55,34 +59,41 @@ export class InputManager {
   /** Arranca la fuente del modo guardado. Si falla (por ejemplo, sin cámara), cae a teclado y lo informa. */
   async start(): Promise<{ ok: boolean; modo: ModoEntrada; error?: unknown }> {
     this.stop();
+    const intento = ++this.intento;
     const modo = this.ajustes.modoEntrada;
+    if (modo === 'teclado') cerrarCamara();
     this.estado = 'cargando';
     this.error = '';
+    const fuente = this.crearFuente(modo);
+    this.fuente = fuente;
     try {
-      const fuente = this.crearFuente(modo);
-      this.fuente = fuente;
       await fuente.start();
-      // Si mientras cargaba se pidió otra fuente, esta ya no sirve.
-      if (this.fuente !== fuente) {
-        fuente.stop();
-        return { ok: false, modo };
-      }
-      this.modoActivo = modo;
-      this.estado = 'lista';
-      this.preview.actualizar();
-      return { ok: true, modo };
     } catch (error) {
       console.warn('ORBE: no se pudo iniciar la entrada', modo, error);
-      this.fuente?.stop();
-      this.fuente = new KeyboardInput();
-      await this.fuente.start();
+      fuente.stop();
+      // Si mientras cargaba se eligió otro modo, este error ya no importa.
+      if (intento !== this.intento) return { ok: false, modo };
+      cerrarCamara();
+      const teclado = new KeyboardInput();
+      this.fuente = teclado;
+      await teclado.start();
       this.modoActivo = 'teclado';
       this.estado = 'error';
-      this.error = describirError(error);
+      this.error = await describirError(error);
       this.preview.actualizar();
       return { ok: false, modo: 'teclado', error };
     }
+    // Si mientras cargaba se eligió otro modo, esta fuente ya no sirve.
+    if (intento !== this.intento) {
+      fuente.stop();
+      return { ok: false, modo };
+    }
+    this.modoActivo = modo;
+    this.estado = 'lista';
+    this.preview.actualizar();
+    return { ok: true, modo };
   }
+
 
   stop() {
     this.fuente?.stop();
@@ -128,6 +139,20 @@ export class InputManager {
     }
 
     this.orb = calcOrb(this.p1, this.p2, CONFIG);
+  }
+
+  /** Si se permite la cámara después de un error (desde el candado), se reintenta solo, sin recargar. */
+  private vigilarPermiso() {
+    navigator.permissions
+      ?.query({ name: 'camera' as PermissionName })
+      .then((permiso) => {
+        permiso.addEventListener('change', () => {
+          if (permiso.state === 'granted' && this.estado === 'error' && this.ajustes.modoEntrada !== 'teclado') this.start();
+        });
+      })
+      .catch(() => {
+        // Sin Permissions API para la cámara: se reintenta a mano.
+      });
   }
 
   private zonaActual(): Zona {
@@ -176,11 +201,36 @@ export class InputManager {
   }
 }
 
-function describirError(e: unknown): string {
+/** Estado del permiso de cámara según el navegador ('granted', 'denied', 'prompt'), si lo informa. */
+async function estadoPermiso(): Promise<PermissionState | null> {
+  try {
+    return (await navigator.permissions.query({ name: 'camera' as PermissionName })).state;
+  } catch {
+    // Firefox y algunos navegadores no informan el permiso de cámara.
+    return null;
+  }
+}
+
+const COMO_PERMITIR = 'Permitila en el candado de la barra de direcciones (Cámara → Permitir).';
+
+async function describirError(e: unknown): Promise<string> {
+  if (e instanceof SinAccesoCamara || e instanceof VideoNoArranca) return e.message;
   if (e instanceof DOMException) {
-    if (e.name === 'NotAllowedError') return 'Se negó el permiso de cámara (permitilo en el candado de la barra de direcciones y volvé a elegir la entrada).';
+    if (e.name === 'NotAllowedError') {
+      if (/system/i.test(e.message)) {
+        return 'El sistema operativo no le deja usar la cámara al navegador (Windows: Configuración → Privacidad → Cámara; macOS: Ajustes → Privacidad → Cámara).';
+      }
+      const permiso = await estadoPermiso();
+      if (permiso === 'denied') return `La cámara está bloqueada para este sitio. ${COMO_PERMITIR}`;
+      if (/dismiss/i.test(e.message) || permiso === 'prompt') {
+        return `Se cerró el aviso de permiso sin aceptar. Si el navegador ya no pregunta: ${COMO_PERMITIR}`;
+      }
+      return `Se negó el permiso de cámara. ${COMO_PERMITIR}`;
+    }
     if (e.name === 'NotFoundError') return 'No se encontró ninguna cámara.';
-    if (e.name === 'NotReadableError') return 'La cámara está en uso por otro programa.';
+    if (e.name === 'NotReadableError') return 'La cámara está en uso por otro programa (cerralo y reintentá).';
+    if (e.name === 'OverconstrainedError') return 'La cámara no admite la resolución pedida (640×480).';
+    return `${e.name}: ${e.message}`;
   }
   return e instanceof Error ? e.message : String(e);
 }

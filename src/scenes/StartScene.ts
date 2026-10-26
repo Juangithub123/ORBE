@@ -43,7 +43,7 @@ export class StartScene extends Phaser.Scene {
 
     if (input.config.modoEntrada !== 'teclado') {
       this.add
-        .text(CONFIG.ancho / 2, CONFIG.alto - 80, 'Preparando la cámara… (si el navegador pregunta, permití el acceso)', ESTILOS.ayuda)
+        .text(CONFIG.ancho / 2, CONFIG.alto - 80, 'Esperando la cámara… Si el navegador pregunta, tocá «Permitir».', ESTILOS.ayuda)
         .setOrigin(0.5);
     }
     const resultado = await input.start();
@@ -56,7 +56,7 @@ export class StartScene extends Phaser.Scene {
       return;
     }
 
-    const aviso = resultado.ok ? undefined : `No se pudo usar la cámara (${input.error}): se pasó a modo teclado.`;
+    const aviso = resultado.ok ? undefined : `${input.error} Mientras, se usa el teclado (se reintenta desde Ajustes).`;
     this.scene.start(ESCENAS.menu, { aviso });
   }
 }
