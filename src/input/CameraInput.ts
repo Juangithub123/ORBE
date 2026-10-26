@@ -1,6 +1,7 @@
 import { FilesetResolver } from '@mediapipe/tasks-vision';
 import type { Ajustes } from '../storage/settings';
 import type { NormPos, PlayerInput } from './PlayerInput';
+import { conLimite } from './limite';
 
 type WasmFileset = Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>;
 
@@ -58,6 +59,13 @@ export class SinAccesoCamara extends Error {
 /** La cámara se abrió pero el video no arrancó. */
 export class VideoNoArranca extends Error {}
 
+
+/** Tiempo máximo para cargar el modelo de detección (descarga, wasm y GPU o CPU). */
+const MODELO_MAX_MS = 90_000;
+/** Tiempo máximo para que arranque el video una vez abierta la cámara. */
+const VIDEO_MAX_MS = 10_000;
+
+
 /** Lo que dibuja la vista previa: todos los puntos detectados y el punto que representa a cada jugador. */
 export interface VistaCamara {
   video: HTMLVideoElement;
@@ -72,8 +80,16 @@ export abstract class CameraInput implements PlayerInput {
   private ultimoTs = 0;
   private jugadores: NormPos[] = [];
   private puntos: NormPos[][] = [];
+  private camaraLista = false;
+  private modeloListo = false;
 
   constructor(protected ajustes: Ajustes) {}
+
+  /** Cómo va el arranque, para mostrarlo mientras carga (y saber qué paso se trabó). */
+  get progreso() {
+    const camara = this.camaraLista ? 'lista' : 'esperando permiso (si el navegador pregunta, tocá «Permitir»)';
+    return `Cámara: ${camara} · Modelo: ${this.modeloListo ? 'listo' : 'cargando…'}`;
+  }
 
   /** Crea el detector de MediaPipe (se llama una vez, en start). */
   protected abstract crearDetector(): Promise<void>;
@@ -84,7 +100,15 @@ export abstract class CameraInput implements PlayerInput {
   async start() {
     // Se piden juntos la cámara y el modelo, para que el arranque sea más corto.
     // Si falla uno, se cierra lo que haya abierto el otro (la cámara la cierra InputManager).
-    const [camara, detector] = await Promise.allSettled([abrirCamara(), this.crearDetector()]);
+    const [camara, detector] = await Promise.allSettled([
+      abrirCamara().then((stream) => {
+        this.camaraLista = true;
+        return stream;
+      }),
+      conLimite(this.crearDetector(), MODELO_MAX_MS, 'El modelo de detección no terminó de cargar (revisá la conexión).').then(() => {
+        this.modeloListo = true;
+      }),
+    ]);
     if (camara.status === 'rejected' || detector.status === 'rejected') {
       this.cerrarDetector();
       throw camara.status === 'rejected' ? camara.reason : (detector as PromiseRejectedResult).reason;
@@ -94,7 +118,7 @@ export abstract class CameraInput implements PlayerInput {
     video.playsInline = true;
     video.srcObject = camara.value;
     try {
-      await video.play();
+      await conLimite(video.play(), VIDEO_MAX_MS, 'tardó demasiado');
     } catch (e) {
       this.cerrarDetector();
       throw new VideoNoArranca(`La cámara se abrió pero el video no arrancó (${e instanceof Error ? e.message : e}).`);

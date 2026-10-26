@@ -23,8 +23,8 @@ export interface Ajustes {
   volumen: number;
   /** Resolución de dibujo (no cambia la lógica, que siempre es de 1280×720). */
   resolucion: Resolucion;
-  /** Cómo arranca el juego: en pantalla completa o en ventana. */
-  pantalla: 'completa' | 'ventana';
+  /** Si el juego arranca en pantalla completa (si no, en ventana). Solo se activa desde Ajustes. */
+  pantallaCompleta: boolean;
 }
 
 const CLAVE = 'orbe.ajustes';
@@ -38,14 +38,16 @@ export const AJUSTES_POR_DEFECTO: Ajustes = {
   mostrarCamaraEnJuego: false,
   volumen: CONFIG.volumenGeneral,
   resolucion: 'auto',
-  pantalla: 'completa',
+  pantallaCompleta: false,
 };
 
 export function cargarAjustes(): Ajustes {
   try {
     const crudo = localStorage.getItem(CLAVE);
     if (!crudo) return structuredClone(AJUSTES_POR_DEFECTO);
-    return { ...structuredClone(AJUSTES_POR_DEFECTO), ...JSON.parse(crudo) };
+    // Solo se toman las claves que existen hoy (así un ajuste viejo que cambió de nombre no queda colgado).
+    const guardados = Object.entries(JSON.parse(crudo)).filter(([clave]) => clave in AJUSTES_POR_DEFECTO);
+    return { ...structuredClone(AJUSTES_POR_DEFECTO), ...Object.fromEntries(guardados) };
   } catch {
     return structuredClone(AJUSTES_POR_DEFECTO);
   }
