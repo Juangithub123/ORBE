@@ -5,7 +5,7 @@ import { OrbView } from '../game/OrbView';
 import type { Vec2 } from '../game/orb';
 import type { Zona } from '../storage/settings';
 import { ESTILOS } from '../ui/text';
-import { ESCENAS, getInput, mostrarCamara } from './shared';
+import { ESCENAS, clicable, getInput, mostrarCamara } from './shared';
 
 // Asistente de calibración de la zona de juego (4 pasos).
 // Mientras dura, la entrada usa toda la imagen de la cámara. En cada paso los jugadores llevan
@@ -55,7 +55,9 @@ export class CalibrationScene extends Phaser.Scene {
     const cx = CONFIG.ancho / 2;
     this.add.text(cx, 70, 'Calibrar zona de juego', { ...ESTILOS.titulo, fontSize: '56px' }).setOrigin(0.5);
     this.instruccion = this.add.text(cx, CONFIG.alto / 2, '', { ...ESTILOS.subtitulo, align: 'center' }).setOrigin(0.5);
-    this.add.text(cx, CONFIG.alto - 28, '[Esc] cancelar', ESTILOS.ayuda).setOrigin(0.5);
+    clicable(this.add.text(cx, CONFIG.alto - 28, '[Esc] o clic acá: cancelar', ESTILOS.ayuda).setOrigin(0.5), () =>
+      this.scene.start(ESCENAS.ajustes),
+    );
     this.g = this.add.graphics().setDepth(12);
     this.input.keyboard!.on('keydown-ESC', () => this.scene.start(ESCENAS.ajustes));
 

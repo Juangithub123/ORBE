@@ -8,12 +8,14 @@ import { ESTILOS } from './text';
 // Se llena de izquierda a derecha; si el orbe sale, se vacía rápido.
 // Después de activarse, hay que sacar el orbe y volver a entrar para activarlo otra vez.
 // Si falta un jugador, no se llena.
+// También se activa con un clic o un toque (para usarlo sin teclado, por ejemplo en una tablet).
 
 const VACIADO = 3;
 
 export class HoldButton {
   private g: Phaser.GameObjects.Graphics;
   private texto: Phaser.GameObjects.Text;
+  private zona: Phaser.GameObjects.Zone;
   private progreso = 0;
   private bloqueado = false;
   /** Si es false, el botón se ve apagado y no se llena. */
@@ -33,6 +35,10 @@ export class HoldButton {
       .text(x, y, etiqueta, { ...ESTILOS.boton, fontSize: '26px', align: 'center' })
       .setOrigin(0.5)
       .setDepth(6);
+    this.zona = scene.add
+      .zone(x, y, ancho, alto)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerup', () => this.activar());
   }
 
   setTexto(etiqueta: string) {
@@ -82,5 +88,6 @@ export class HoldButton {
   destroy() {
     this.g.destroy();
     this.texto.destroy();
+    this.zona.destroy();
   }
 }

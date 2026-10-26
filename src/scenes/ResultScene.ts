@@ -4,10 +4,10 @@ import { PALETA } from '../palette';
 import { OrbView } from '../game/OrbView';
 import { crearRun } from '../game/RunState';
 import { ESTILOS } from '../ui/text';
-import { ESCENAS, getInput, getNiveles, getRun, setRun, mostrarCamara } from './shared';
+import { ESCENAS, clicable, getInput, getNiveles, getRun, setRun, mostrarCamara } from './shared';
 
 // GAME OVER / ¡GANARON!, igual que las capturas de TD.
-// Acercarse durante holdMs (o la tecla 1) reinicia con el mismo dúo.
+// Acercarse durante holdMs (o la tecla 1, o un clic en el texto) reinicia con el mismo dúo.
 // Fase 5: guardado en el ranking y botón Menú que se llena con el orbe.
 
 /** Al entrar, se ignora la cercanía un momento para no reiniciar sin querer. */
@@ -36,14 +36,15 @@ export class ResultScene extends Phaser.Scene {
     this.reiniciando = false;
 
     this.add.text(cx, cy - 30, data.gano ? '¡GANARON!' : 'GAME OVER', ESTILOS.titulo).setOrigin(0.5);
-    this.add
-      .text(cx, cy + 70, data.gano ? 'Acérquense entre sí para jugar de nuevo (o tecla 1)' : 'Acérquense entre sí para reiniciar (o tecla 1)', ESTILOS.subtitulo)
-      .setOrigin(0.5);
+    const texto = data.gano ? 'Acérquense entre sí para jugar de nuevo (o tecla 1)' : 'Acérquense entre sí para reiniciar (o tecla 1)';
+    clicable(this.add.text(cx, cy + 70, texto, ESTILOS.subtitulo).setOrigin(0.5), () => this.reiniciar());
     const nivel = data.gano ? getNiveles(this).length : run.nivel + 1;
     this.add
       .text(cx, cy - 170, `${run.equipo} · Puntaje: ${run.puntaje} · Nivel ${nivel}`, ESTILOS.ayuda)
       .setOrigin(0.5);
-    this.add.text(cx, CONFIG.alto - 30, '[M] volver al menú', ESTILOS.ayuda).setOrigin(0.5);
+    clicable(this.add.text(cx, CONFIG.alto - 30, '[M] o clic acá: volver al menú', ESTILOS.ayuda).setOrigin(0.5), () =>
+      this.scene.start(ESCENAS.menu),
+    );
 
     const kb = this.input.keyboard!;
     kb.on('keydown-ONE', () => this.reiniciar());

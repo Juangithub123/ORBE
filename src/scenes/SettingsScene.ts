@@ -5,13 +5,12 @@ import type { ModoEntrada } from '../input/PlayerInput';
 import { borrarRanking } from '../storage/leaderboard';
 import { HoldButton } from '../ui/HoldButton';
 import { ESTILOS } from '../ui/text';
-import { ESCENAS, getInput, mostrarCamara } from './shared';
+import { ESCENAS, NOMBRE_MODO, getInput, mostrarCamara } from './shared';
 
 // Ajustes del dispositivo (se guardan en localStorage).
-// Cada botón se activa manteniendo el orbe encima, o con su número en el teclado.
+// Cada botón se activa manteniendo el orbe encima, con un clic o toque, o con su número en el teclado.
 
 const MODOS: ModoEntrada[] = ['pose', 'manos', 'teclado'];
-const NOMBRE_MODO: Record<ModoEntrada, string> = { pose: 'Pose (2 personas)', manos: 'Manos (1 persona)', teclado: 'Teclado' };
 /** Tiempo para la segunda confirmación de "Restablecer ranking". */
 const CONFIRMAR_MS = 5000;
 

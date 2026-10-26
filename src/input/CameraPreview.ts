@@ -3,6 +3,7 @@ import type { VistaCamara } from './CameraInput';
 
 // Miniatura de la cámara en la esquina inferior derecha, con los puntos detectados.
 // Es un <canvas> del DOM encima del juego (no pasa por Phaser ni por el bloom).
+// Va dentro de #app para que también se vea en pantalla completa.
 
 const ANCHO = 240;
 const ALTO = 180;
@@ -34,7 +35,7 @@ export class CameraPreview {
       zIndex: '10',
     });
     this.ctx = this.canvas.getContext('2d')!;
-    document.body.appendChild(this.canvas);
+    (document.getElementById('app') ?? document.body).appendChild(this.canvas);
   }
 
   mostrar(visible: boolean) {

@@ -1,5 +1,6 @@
 import type * as Phaser from 'phaser';
 import type { InputManager } from '../input/InputManager';
+import type { ModoEntrada } from '../input/PlayerInput';
 import type { RunState } from '../game/RunState';
 import { parseTiled, type TiledMap } from '../level/parseTiled';
 import type { LevelData } from '../level/types';
@@ -19,6 +20,18 @@ export const ESCENAS = {
   ranking: 'Leaderboard',
   calibracion: 'Calibration',
 } as const;
+
+export const NOMBRE_MODO: Record<ModoEntrada, string> = {
+  pose: 'Pose (2 personas)',
+  manos: 'Manos (1 persona)',
+  teclado: 'Teclado',
+};
+
+/** Hace que un objeto se active con un clic o un toque (para usar el juego sin teclado). */
+export function clicable<T extends Phaser.GameObjects.Text | Phaser.GameObjects.Zone>(objeto: T, accion: () => void): T {
+  objeto.setInteractive({ useHandCursor: true }).on('pointerup', accion);
+  return objeto;
+}
 
 export const getInput = (scene: Phaser.Scene) => scene.registry.get('input') as InputManager;
 

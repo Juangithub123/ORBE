@@ -3,10 +3,10 @@ import { CONFIG } from '../config';
 import { PALETA } from '../palette';
 import { OrbView } from '../game/OrbView';
 import { ESTILOS } from '../ui/text';
-import { ESCENAS, getInput, mostrarCamara, setRun } from './shared';
+import { ESCENAS, NOMBRE_MODO, clicable, getInput, mostrarCamara, setRun } from './shared';
 
 // Menú principal. En la fase 5 los botones pasan a ser HoldButton (se llenan con el orbe encima).
-// Por ahora se usan con los atajos de teclado.
+// Por ahora se usan con un clic o toque, o con los atajos de teclado.
 
 const BOTONES = [
   { texto: 'Jugar', tecla: 'Enter', escena: ESCENAS.nombre },
@@ -39,6 +39,7 @@ export class MenuScene extends Phaser.Scene {
       g.strokeRoundedRect(x - 130, y - 50, 260, 100, 14);
       this.add.text(x, y - 8, b.texto, ESTILOS.boton).setOrigin(0.5);
       this.add.text(x, y + 30, `[${b.tecla}]`, ESTILOS.ayuda).setOrigin(0.5);
+      clicable(this.add.zone(x, y, 260, 100), () => this.scene.start(b.escena));
     });
 
     const kb = this.input.keyboard!;
@@ -54,9 +55,13 @@ export class MenuScene extends Phaser.Scene {
     if (data?.aviso) {
       this.add.text(cx, CONFIG.alto - 110, data.aviso, ESTILOS.ayuda).setOrigin(0.5);
     }
-    this.add
-      .text(cx, CONFIG.alto - 24, 'Teclado: WASD mueve a P1, flechas a P2', ESTILOS.ayuda)
-      .setOrigin(0.5);
+    const input = getInput(this);
+    const modo = input.modo ?? input.config.modoEntrada;
+    const ayuda =
+      modo === 'teclado'
+        ? 'Entrada: Teclado (WASD mueve a P1, flechas a P2) · Manos y Pose se eligen en Ajustes'
+        : `Entrada: ${NOMBRE_MODO[modo]} · se cambia en Ajustes`;
+    this.add.text(cx, CONFIG.alto - 24, ayuda, ESTILOS.ayuda).setOrigin(0.5);
 
     this.orbe = new OrbView(this, getInput(this));
   }
