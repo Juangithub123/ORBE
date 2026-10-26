@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import { CONFIG } from '../config';
 import { PALETA } from '../palette';
 import { InputManager } from '../input/InputManager';
-import { cargarAjustes } from '../storage/settings';
+import { cargarAjustes, guardarAjustes } from '../storage/settings';
 import { ESCENAS, claveNivel } from './shared';
 
 // Carga los recursos, lee los ajustes guardados y crea el InputManager (todavía sin cámara).
@@ -41,6 +41,13 @@ export class BootScene extends Phaser.Scene {
     g.destroy();
 
     const ajustes = cargarAjustes();
+    // ?entrada=pose | manos | teclado elige el modo de entrada y lo guarda
+    // (útil en una tablet o en la instalación, donde no hay teclado para entrar a Ajustes).
+    const entrada = new URLSearchParams(location.search).get('entrada');
+    if (entrada === 'pose' || entrada === 'manos' || entrada === 'teclado') {
+      ajustes.modoEntrada = entrada;
+      guardarAjustes(ajustes);
+    }
     this.registry.set('ajustes', ajustes);
     this.registry.set('niveles', this.cache.json.get('niveles') as string[]);
     this.registry.set('input', new InputManager(ajustes));
