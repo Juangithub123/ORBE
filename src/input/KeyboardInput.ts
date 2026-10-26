@@ -2,7 +2,7 @@ import { CONFIG } from '../config';
 import type { NormPos, PlayerInput } from './PlayerInput';
 
 // Modo teclado (para depurar sin cámara): WASD mueve a P1 y las flechas a P2.
-// Siempre reporta 2 jugadores, así que nunca pausa.
+// Reporta 2 jugadores, salvo que se apriete P: simula que falta uno (para probar la pausa).
 // Escucha el teclado directo en la ventana, sin depender de Phaser.
 
 const TECLAS_P1 = { arriba: 'KeyW', abajo: 'KeyS', izq: 'KeyA', der: 'KeyD' };
@@ -13,10 +13,13 @@ export class KeyboardInput implements PlayerInput {
   private p1: NormPos = { x: 0.35, y: 0.75 };
   private p2: NormPos = { x: 0.65, y: 0.75 };
   private ultimo = 0;
+  /** Con P se alterna: simula que P2 salió de la cámara. */
+  private simularAusencia = false;
 
   private onDown = (e: KeyboardEvent) => {
     this.apretadas.add(e.code);
     if (e.code.startsWith('Arrow')) e.preventDefault();
+    if (e.code === 'KeyP' && !e.repeat) this.simularAusencia = !this.simularAusencia;
   };
   private onUp = (e: KeyboardEvent) => this.apretadas.delete(e.code);
   private onBlur = () => this.apretadas.clear();
@@ -41,7 +44,7 @@ export class KeyboardInput implements PlayerInput {
     this.ultimo = ahora;
     this.mover(this.p1, TECLAS_P1, dt);
     this.mover(this.p2, TECLAS_P2, dt);
-    return { players: [{ ...this.p1 }, { ...this.p2 }] };
+    return { players: this.simularAusencia ? [{ ...this.p1 }] : [{ ...this.p1 }, { ...this.p2 }] };
   }
 
   private mover(p: NormPos, teclas: typeof TECLAS_P1, dt: number) {

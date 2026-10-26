@@ -10,8 +10,8 @@ import { Hud } from '../ui/Hud';
 import { ESTILOS } from '../ui/text';
 import { ESCENAS, getInput, getNivel, getNiveles, getRun, setRun } from './shared';
 
-// Un nivel del juego: scroll hacia arriba con aceleración, rocas, monedas, meta y vidas.
-// Fase 3: cuenta regresiva y pausa por ausencia.
+// Un nivel del juego: cuenta regresiva, scroll hacia arriba con aceleración, rocas, monedas,
+// meta, vidas y pausa cuando falta un jugador.
 
 type Estado = 'cuenta' | 'jugando' | 'pausa' | 'completo' | 'perdido';
 
@@ -55,6 +55,10 @@ export class GameScene extends Phaser.Scene {
   private invulnerableTotal = false;
   private textoInvulnerable!: Phaser.GameObjects.Text;
 
+  /** Segundos que faltan de la cuenta regresiva. */
+  private cuentaRestante = 0;
+  private textoCuenta!: Phaser.GameObjects.Text;
+
   constructor() {
     super(ESCENAS.juego);
   }
@@ -62,7 +66,6 @@ export class GameScene extends Phaser.Scene {
   create() {
     this.run = getRun(this)!;
     this.nivel = getNivel(this, this.run.nivel);
-    this.estado = 'jugando';
     this.tiempoJugando = 0;
     this.invulnerableHasta = 0;
     this.tocando = new Set();
@@ -105,6 +108,15 @@ export class GameScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(100)
       .setVisible(this.invulnerableTotal);
+    this.textoCuenta = this.add
+      .text(CONFIG.ancho / 2, CONFIG.alto / 2 - 40, '', { ...ESTILOS.titulo, fontSize: '180px' })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(150);
+    this.iniciarCuenta();
+
+    // Si la escena se cierra (cambio de nivel, reinicio), se cierra también el overlay de pausa.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scene.stop(ESCENAS.pausa));
 
     const kb = this.input.keyboard!;
     kb.addCapture('F1');
@@ -128,6 +140,13 @@ export class GameScene extends Phaser.Scene {
   update(time: number, delta: number) {
     const dt = delta / 1000;
     const cam = this.cameras.main;
+    const presentes = getInput(this).count;
+
+    // Presencia: si falta un jugador se pausa; cuando vuelven los dos, se repite la cuenta regresiva.
+    if ((this.estado === 'jugando' || this.estado === 'cuenta') && presentes < 2) this.pausar();
+    else if (this.estado === 'pausa' && presentes === 2) this.reanudar();
+
+    if (this.estado === 'cuenta') this.avanzarCuenta(dt);
 
     if (this.estado === 'jugando') {
       this.tiempoJugando += dt;
@@ -153,6 +172,46 @@ export class GameScene extends Phaser.Scene {
       invulnerableTotal: this.invulnerableTotal,
       rocas: this.debug.visible ? this.rocasEnPantalla() : [],
     });
+  }
+
+  // --- Cuenta regresiva y pausa -----------------------------------------------
+
+  /** El scroll queda detenido, pero el orbe se mueve, para que los jugadores se acomoden. */
+  private iniciarCuenta() {
+    this.estado = 'cuenta';
+    this.cuentaRestante = CONFIG.cuentaRegresivaS;
+    this.mostrarNumero(Math.ceil(this.cuentaRestante));
+  }
+
+  private avanzarCuenta(dt: number) {
+    const antes = Math.ceil(this.cuentaRestante);
+    this.cuentaRestante -= dt;
+    const ahora = Math.ceil(this.cuentaRestante);
+    if (this.cuentaRestante <= 0) {
+      this.estado = 'jugando';
+      this.textoCuenta.setVisible(false);
+      // Fase 6: bip agudo (880 Hz) al empezar.
+    } else if (ahora !== antes) {
+      this.mostrarNumero(ahora);
+    }
+  }
+
+  private mostrarNumero(n: number) {
+    this.textoCuenta.setText(String(n)).setVisible(true).setScale(1.4).setAlpha(1);
+    this.tweens.add({ targets: this.textoCuenta, scale: 1, duration: 250, ease: 'Back.easeOut' });
+    // Fase 6: bip de 440 Hz.
+  }
+
+  private pausar() {
+    this.estado = 'pausa';
+    this.textoCuenta.setVisible(false);
+    this.scene.launch(ESCENAS.pausa);
+    // Fase 6: la música baja y se filtra.
+  }
+
+  private reanudar() {
+    this.scene.stop(ESCENAS.pausa);
+    this.iniciarCuenta();
   }
 
   // --- Construcción del nivel ------------------------------------------------
@@ -295,7 +354,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private completar() {
-    if (this.estado !== 'jugando') return;
+    if (this.estado === 'completo' || this.estado === 'perdido') return;
     this.estado = 'completo';
     // Fase 6: acorde de llegada.
     if (this.run.nivel + 1 < getNiveles(this).length) {
