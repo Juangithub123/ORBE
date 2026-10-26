@@ -1,0 +1,23 @@
+{
+  "name": "orbe",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ORBE – La salida es colectiva. Arcade cooperativo para dos jugadores que juegan con el cuerpo.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:electron": "tsc --noEmit && vite build --mode electron",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "phaser": "4.2.1"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}
