@@ -164,7 +164,7 @@ export class SettingsScene extends Phaser.Scene {
   /** Alterna pantalla completa / ventana y lo guarda como forma de arrancar el juego. */
   private alternarPantalla() {
     const completa = !this.scale.isFullscreen;
-    getInput(this).aplicarAjustes({ pantalla: completa ? 'completa' : 'ventana' });
+    getInput(this).aplicarAjustes({ pantallaCompleta: completa });
     if (completa) this.scale.startFullscreen();
     else this.scale.stopFullscreen();
   }
@@ -189,7 +189,7 @@ export class SettingsScene extends Phaser.Scene {
     const input = getInput(this);
     switch (input.estado) {
       case 'cargando':
-        return 'Esperando la cámara… Si el navegador pregunta, tocá «Permitir».';
+        return input.progreso;
       case 'error':
         return `${input.error}\nMientras, se usa el teclado · Clic acá o [R] para reintentar`;
       case 'lista':

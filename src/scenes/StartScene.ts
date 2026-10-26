@@ -6,6 +6,7 @@ import { ESCENAS, getInput, getNiveles, setRun, mostrarCamara } from './shared';
 
 // "Hacé clic para empezar": los navegadores piden un gesto del usuario
 // para iniciar el audio, la pantalla completa y la cámara.
+// La cámara (permiso y modelo) carga en segundo plano: se pasa al menú enseguida y ahí se ve cómo va.
 
 export class StartScene extends Phaser.Scene {
   private arrancando = false;
@@ -27,13 +28,13 @@ export class StartScene extends Phaser.Scene {
     this.input.keyboard?.once('keydown', () => this.arrancar());
   }
 
-  private async arrancar() {
+  private arrancar() {
     if (this.arrancando) return;
     this.arrancando = true;
 
     // Fase 6: AudioEngine.resume().
     const input = getInput(this);
-    if (input.config.pantalla === 'completa' && !this.scale.isFullscreen) {
+    if (input.config.pantallaCompleta && !this.scale.isFullscreen) {
       try {
         this.scale.startFullscreen();
       } catch {
@@ -41,12 +42,7 @@ export class StartScene extends Phaser.Scene {
       }
     }
 
-    if (input.config.modoEntrada !== 'teclado') {
-      this.add
-        .text(CONFIG.ancho / 2, CONFIG.alto - 80, 'Esperando la cámara… Si el navegador pregunta, tocá «Permitir».', ESTILOS.ayuda)
-        .setOrigin(0.5);
-    }
-    const resultado = await input.start();
+    input.start();
 
     // Depuración: ?nivel=2 arranca directo en ese nivel con un dúo de prueba.
     const nivel = Number(new URLSearchParams(location.search).get('nivel'));
@@ -56,7 +52,6 @@ export class StartScene extends Phaser.Scene {
       return;
     }
 
-    const aviso = resultado.ok ? undefined : `${input.error} Mientras, se usa el teclado (se reintenta desde Ajustes).`;
-    this.scene.start(ESCENAS.menu, { aviso });
+    this.scene.start(ESCENAS.menu);
   }
 }

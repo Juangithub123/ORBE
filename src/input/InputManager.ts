@@ -56,6 +56,11 @@ export class InputManager {
     return this.ajustes;
   }
 
+  /** Mientras carga: qué falta (permiso de cámara, modelo). */
+  get progreso() {
+    return this.fuente instanceof CameraInput ? this.fuente.progreso : 'Cargando…';
+  }
+
   /** Arranca la fuente del modo guardado. Si falla (por ejemplo, sin cámara), cae a teclado y lo informa. */
   async start(): Promise<{ ok: boolean; modo: ModoEntrada; error?: unknown }> {
     this.stop();
@@ -232,5 +237,7 @@ async function describirError(e: unknown): Promise<string> {
     if (e.name === 'OverconstrainedError') return 'La cámara no admite la resolución pedida (640×480).';
     return `${e.name}: ${e.message}`;
   }
-  return e instanceof Error ? e.message : String(e);
+  const mensaje = e instanceof Error ? e.message : String(e);
+  if (/fetch/i.test(mensaje)) return `No se pudo descargar el modelo de detección (${mensaje}).`;
+  return mensaje;
 }

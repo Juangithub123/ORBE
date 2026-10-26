@@ -1,5 +1,6 @@
 import { HandLandmarker } from '@mediapipe/tasks-vision';
 import { CameraInput, RUTA_MODELOS, cargarFileset } from './CameraInput';
+import { conLimite } from './limite';
 import type { NormPos } from './PlayerInput';
 
 // Modo Manos: una persona, dos manos. Cada mano es un "jugador".
@@ -33,10 +34,13 @@ export class HandsInput extends CameraInput {
   }
 }
 
+/** Si la GPU no termina en este tiempo, se prueba con la CPU (en algunos equipos se cuelga sin dar error). */
+const GPU_MAX_MS = 20_000;
+
 /** Intenta con la GPU y, si no anda, con la CPU. */
 export async function crearConFallback<T>(crear: (delegate: 'GPU' | 'CPU') => Promise<T>): Promise<T> {
   try {
-    return await crear('GPU');
+    return await conLimite(crear('GPU'), GPU_MAX_MS, 'la GPU no respondió');
   } catch (e) {
     console.warn('ORBE: MediaPipe no pudo usar la GPU, se usa la CPU', e);
     return crear('CPU');
