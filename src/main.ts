@@ -1,5 +1,4 @@
 import * as Phaser from 'phaser';
-import { CONFIG } from './config';
 import { PALETA } from './palette';
 import { BootScene } from './scenes/BootScene';
 import { CalibrationScene } from './scenes/CalibrationScene';
@@ -13,17 +12,20 @@ import { ResultScene } from './scenes/ResultScene';
 import { SettingsScene } from './scenes/SettingsScene';
 import { StartScene } from './scenes/StartScene';
 import type { InputManager } from './input/InputManager';
+import { engancharEscenas, iniciarResolucion, tamanoCanvas } from './pantalla';
 import { cargarParametros } from './storage/parametros';
+import { cargarAjustes } from './storage/settings';
 import { PanelParametros } from './ui/PanelParametros';
 
 // Los parámetros cambiados a mano en el panel se aplican antes de crear el juego.
 cargarParametros();
+// El canvas se crea con la resolución guardada en Ajustes; la lógica sigue en CONFIG.ancho × CONFIG.alto.
+iniciarResolucion(cargarAjustes().resolucion);
 
 const game = new Phaser.Game({
   type: Phaser.WEBGL,
   parent: 'app',
-  width: CONFIG.ancho,
-  height: CONFIG.alto,
+  ...tamanoCanvas(),
   backgroundColor: PALETA.fondo,
   scale: {
     mode: Phaser.Scale.FIT,
@@ -46,6 +48,8 @@ const game = new Phaser.Game({
     LeaderboardScene,
   ],
 });
+
+engancharEscenas(game);
 
 // La entrada se actualiza una vez por frame, antes que las escenas.
 game.events.on(Phaser.Core.Events.PRE_STEP, (_time: number, delta: number) => {

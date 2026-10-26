@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import type { ModoEntrada } from '../input/PlayerInput';
+import type { Resolucion } from '../pantalla';
 
 // Ajustes del dispositivo, guardados en localStorage.
 // Si localStorage falla (modo privado, permisos), se usan los valores por defecto.
@@ -20,6 +21,10 @@ export interface Ajustes {
   zonaPose: Zona;
   mostrarCamaraEnJuego: boolean;
   volumen: number;
+  /** Resolución de dibujo (no cambia la lógica, que siempre es de 1280×720). */
+  resolucion: Resolucion;
+  /** Cómo arranca el juego: en pantalla completa o en ventana. */
+  pantalla: 'completa' | 'ventana';
 }
 
 const CLAVE = 'orbe.ajustes';
@@ -32,6 +37,8 @@ export const AJUSTES_POR_DEFECTO: Ajustes = {
   zonaPose: { x0: 0.15, x1: 0.85, y0: 0.3, y1: 0.7 },
   mostrarCamaraEnJuego: false,
   volumen: CONFIG.volumenGeneral,
+  resolucion: 'auto',
+  pantalla: 'completa',
 };
 
 export function cargarAjustes(): Ajustes {

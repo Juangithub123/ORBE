@@ -178,7 +178,7 @@ export class InputManager {
 
 function describirError(e: unknown): string {
   if (e instanceof DOMException) {
-    if (e.name === 'NotAllowedError') return 'Se negó el permiso de cámara.';
+    if (e.name === 'NotAllowedError') return 'Se negó el permiso de cámara (permitilo en el candado de la barra de direcciones y volvé a elegir la entrada).';
     if (e.name === 'NotFoundError') return 'No se encontró ninguna cámara.';
     if (e.name === 'NotReadableError') return 'La cámara está en uso por otro programa.';
   }

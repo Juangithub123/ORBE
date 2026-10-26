@@ -3,7 +3,7 @@ import { CONFIG } from '../config';
 import { PALETA } from '../palette';
 import { OrbView } from '../game/OrbView';
 import { crearRun } from '../game/RunState';
-import { ESTILOS } from '../ui/text';
+import { ESTILOS, encajar } from '../ui/text';
 import { ESCENAS, clicable, getInput, getNiveles, getRun, setRun, mostrarCamara } from './shared';
 
 // GAME OVER / ¡GANARON!, igual que las capturas de TD.
@@ -37,7 +37,7 @@ export class ResultScene extends Phaser.Scene {
 
     this.add.text(cx, cy - 30, data.gano ? '¡GANARON!' : 'GAME OVER', ESTILOS.titulo).setOrigin(0.5);
     const texto = data.gano ? 'Acérquense entre sí para jugar de nuevo (o tecla 1)' : 'Acérquense entre sí para reiniciar (o tecla 1)';
-    clicable(this.add.text(cx, cy + 70, texto, ESTILOS.subtitulo).setOrigin(0.5), () => this.reiniciar());
+    clicable(encajar(this.add.text(cx, cy + 70, texto, ESTILOS.subtitulo).setOrigin(0.5), CONFIG.ancho - 40), () => this.reiniciar());
     const nivel = data.gano ? getNiveles(this).length : run.nivel + 1;
     this.add
       .text(cx, cy - 170, `${run.equipo} · Puntaje: ${run.puntaje} · Nivel ${nivel}`, ESTILOS.ayuda)

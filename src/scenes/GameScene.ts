@@ -8,6 +8,7 @@ import type { LevelData, Moneda, Roca } from '../level/types';
 import { DebugOverlay } from '../ui/DebugOverlay';
 import { Hud } from '../ui/Hud';
 import { ESTILOS } from '../ui/text';
+import { escalaActual } from '../pantalla';
 import { ESCENAS, getInput, getNivel, getNiveles, getRun, mostrarCamara, setRun } from './shared';
 
 // Un nivel del juego: cuenta regresiva, scroll hacia arriba con aceleración, rocas, monedas,
@@ -78,7 +79,8 @@ export class GameScene extends Phaser.Scene {
     // Brillo general, como en TD (todo lo claro brilla).
     Phaser.Actions.AddEffectBloom(cam, {
       threshold: CONFIG.bloomUmbral,
-      blurRadius: CONFIG.bloomRadio,
+      // El radio es en píxeles reales: con más resolución se agranda para que el brillo se vea igual.
+      blurRadius: CONFIG.bloomRadio * escalaActual(),
       blurSteps: 4,
       blurQuality: 1,
       blendAmount: CONFIG.bloomIntensidad,
