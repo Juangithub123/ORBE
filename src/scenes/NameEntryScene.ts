@@ -2,12 +2,15 @@ import * as Phaser from 'phaser';
 import { CONFIG } from '../config';
 import { crearRun } from '../game/RunState';
 import { ESTILOS } from '../ui/text';
-import { ESCENAS, setRun, mostrarCamara } from './shared';
+import { ESCENAS, clicable, setRun, mostrarCamara } from './shared';
 
 // Nombre del dúo. En la fase 5 se escribe atrapando letras que caen con el orbe.
 // Por ahora se usa el atajo de depuración: escribir con el teclado, Backspace borra, Enter confirma.
+// Sin teclado (tablet), un clic o toque en "Jugar" arranca con el nombre por defecto.
 
 const LETRAS = /^[A-ZÑ]$/;
+/** Nombre que se usa si se arranca con un clic sin haber escrito nada. */
+const NOMBRE_POR_DEFECTO = 'DUO';
 
 export class NameEntryScene extends Phaser.Scene {
   private nombre = '';
@@ -27,6 +30,10 @@ export class NameEntryScene extends Phaser.Scene {
       .text(cx, CONFIG.alto - 60, 'Escribí con el teclado · [Backspace] borra · [Enter] confirma', ESTILOS.ayuda)
       .setOrigin(0.5);
     this.add.text(cx, CONFIG.alto - 30, '(El minijuego de letras llega en la fase 5)', ESTILOS.ayuda).setOrigin(0.5);
+    clicable(this.add.text(cx, CONFIG.alto - 150, '[ Jugar ]', ESTILOS.boton).setOrigin(0.5), () => {
+      if (this.nombre.length === 0) this.nombre = NOMBRE_POR_DEFECTO;
+      this.confirmar();
+    });
 
     this.input.keyboard!.on('keydown', (e: KeyboardEvent) => this.tecla(e));
   }
