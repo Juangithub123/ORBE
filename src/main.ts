@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { CONFIG } from './config';
 import { PALETA } from './palette';
 import { BootScene } from './scenes/BootScene';
+import { CalibrationScene } from './scenes/CalibrationScene';
 import { GameScene } from './scenes/GameScene';
 import { LeaderboardScene } from './scenes/LeaderboardScene';
 import { LevelTransitionScene } from './scenes/LevelTransitionScene';
@@ -28,6 +29,7 @@ const game = new Phaser.Game({
     StartScene,
     MenuScene,
     SettingsScene,
+    CalibrationScene,
     NameEntryScene,
     GameScene,
     PauseOverlay,

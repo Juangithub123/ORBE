@@ -4,7 +4,7 @@ import { PALETA } from '../palette';
 import { OrbView } from '../game/OrbView';
 import { crearRun } from '../game/RunState';
 import { ESTILOS } from '../ui/text';
-import { ESCENAS, getInput, getNiveles, getRun, setRun } from './shared';
+import { ESCENAS, getInput, getNiveles, getRun, setRun, mostrarCamara } from './shared';
 
 // GAME OVER / ¡GANARON!, igual que las capturas de TD.
 // Acercarse durante holdMs (o la tecla 1) reinicia con el mismo dúo.
@@ -27,6 +27,7 @@ export class ResultScene extends Phaser.Scene {
   }
 
   create(data: { gano: boolean }) {
+    mostrarCamara(this, false);
     const run = getRun(this)!;
     const cx = CONFIG.ancho / 2;
     const cy = CONFIG.alto / 2;

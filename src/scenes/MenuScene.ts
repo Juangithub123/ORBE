@@ -3,7 +3,7 @@ import { CONFIG } from '../config';
 import { PALETA } from '../palette';
 import { OrbView } from '../game/OrbView';
 import { ESTILOS } from '../ui/text';
-import { ESCENAS, getInput, setRun } from './shared';
+import { ESCENAS, getInput, mostrarCamara, setRun } from './shared';
 
 // Menú principal. En la fase 5 los botones pasan a ser HoldButton (se llenan con el orbe encima).
 // Por ahora se usan con los atajos de teclado.
@@ -23,6 +23,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(data: { aviso?: string }) {
+    mostrarCamara(this, true);
     // Volver al menú termina el dúo actual: el próximo "Jugar" es un dúo nuevo.
     setRun(this, undefined);
 

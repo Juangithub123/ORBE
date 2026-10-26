@@ -8,7 +8,7 @@ import type { LevelData, Moneda, Roca } from '../level/types';
 import { DebugOverlay } from '../ui/DebugOverlay';
 import { Hud } from '../ui/Hud';
 import { ESTILOS } from '../ui/text';
-import { ESCENAS, getInput, getNivel, getNiveles, getRun, setRun } from './shared';
+import { ESCENAS, getInput, getNivel, getNiveles, getRun, mostrarCamara, setRun } from './shared';
 
 // Un nivel del juego: cuenta regresiva, scroll hacia arriba con aceleración, rocas, monedas,
 // meta, vidas y pausa cuando falta un jugador.
@@ -64,6 +64,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    mostrarCamara(this, getInput(this).config.mostrarCamaraEnJuego);
     this.run = getRun(this)!;
     this.nivel = getNivel(this, this.run.nivel);
     this.tiempoJugando = 0;

@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import { CONFIG } from '../config';
 import { crearRun } from '../game/RunState';
 import { ESTILOS } from '../ui/text';
-import { ESCENAS, setRun } from './shared';
+import { ESCENAS, setRun, mostrarCamara } from './shared';
 
 // Nombre del dúo. En la fase 5 se escribe atrapando letras que caen con el orbe.
 // Por ahora se usa el atajo de depuración: escribir con el teclado, Backspace borra, Enter confirma.
@@ -18,6 +18,7 @@ export class NameEntryScene extends Phaser.Scene {
   }
 
   create() {
+    mostrarCamara(this, false);
     this.nombre = '';
     const cx = CONFIG.ancho / 2;
     this.add.text(cx, 140, 'Nombre del dúo', ESTILOS.subtitulo).setOrigin(0.5);

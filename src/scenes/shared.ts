@@ -17,9 +17,13 @@ export const ESCENAS = {
   transicion: 'LevelTransition',
   resultado: 'Result',
   ranking: 'Leaderboard',
+  calibracion: 'Calibration',
 } as const;
 
 export const getInput = (scene: Phaser.Scene) => scene.registry.get('input') as InputManager;
+
+/** Muestra u oculta la miniatura de la cámara (solo aparece si la entrada es por cámara). */
+export const mostrarCamara = (scene: Phaser.Scene, visible: boolean) => getInput(scene).preview.mostrar(visible);
 
 export const getRun = (scene: Phaser.Scene) => scene.registry.get('run') as RunState | undefined;
 export const setRun = (scene: Phaser.Scene, run: RunState | undefined) => scene.registry.set('run', run);
