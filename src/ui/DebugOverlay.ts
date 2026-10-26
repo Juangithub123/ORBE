@@ -3,7 +3,7 @@ import { CONFIG } from '../config';
 import type { InputManager } from '../input/InputManager';
 import type { Roca } from '../level/types';
 import type { Vec2 } from '../game/orb';
-import { FUENTE } from './text';
+import { FUENTE, nitido } from './text';
 
 // Overlay de depuración (F1): FPS, entrada, orbe, scroll y polígonos de colisión.
 
@@ -27,7 +27,7 @@ export class DebugOverlay {
   ) {
     this.g = scene.add.graphics().setDepth(90);
     this.texto = scene.add
-      .text(12, CONFIG.alto - 12, '', { fontFamily: FUENTE, fontSize: '16px', color: '#00ff88', backgroundColor: '#000000aa' })
+      .text(12, CONFIG.alto - 12, '', nitido({ fontFamily: FUENTE, fontSize: '16px', color: '#00ff88', backgroundColor: '#000000aa' }))
       .setOrigin(0, 1)
       .setScrollFactor(0)
       .setDepth(200);

@@ -32,7 +32,8 @@ export class StartScene extends Phaser.Scene {
     this.arrancando = true;
 
     // Fase 6: AudioEngine.resume().
-    if (!this.scale.isFullscreen) {
+    const input = getInput(this);
+    if (input.config.pantalla === 'completa' && !this.scale.isFullscreen) {
       try {
         this.scale.startFullscreen();
       } catch {
@@ -40,7 +41,6 @@ export class StartScene extends Phaser.Scene {
       }
     }
 
-    const input = getInput(this);
     if (input.config.modoEntrada !== 'teclado') {
       this.add
         .text(CONFIG.ancho / 2, CONFIG.alto - 80, 'Preparando la cámara… (si el navegador pregunta, permití el acceso)', ESTILOS.ayuda)

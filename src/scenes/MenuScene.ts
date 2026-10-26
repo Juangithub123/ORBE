@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import { CONFIG } from '../config';
 import { PALETA } from '../palette';
 import { OrbView } from '../game/OrbView';
-import { ESTILOS } from '../ui/text';
+import { ESTILOS, encajar } from '../ui/text';
 import { ESCENAS, NOMBRE_MODO, clicable, getInput, mostrarCamara, setRun } from './shared';
 
 // Menú principal. En la fase 5 los botones pasan a ser HoldButton (se llenan con el orbe encima).
@@ -53,7 +53,7 @@ export class MenuScene extends Phaser.Scene {
       .setVisible(false);
 
     if (data?.aviso) {
-      this.add.text(cx, CONFIG.alto - 110, data.aviso, ESTILOS.ayuda).setOrigin(0.5);
+      encajar(this.add.text(cx, CONFIG.alto - 110, data.aviso, ESTILOS.ayuda).setOrigin(0.5), CONFIG.ancho - 40);
     }
     const input = getInput(this);
     const modo = input.modo ?? input.config.modoEntrada;
@@ -61,7 +61,7 @@ export class MenuScene extends Phaser.Scene {
       modo === 'teclado'
         ? 'Entrada: Teclado (WASD mueve a P1, flechas a P2) · Manos y Pose se eligen en Ajustes'
         : `Entrada: ${NOMBRE_MODO[modo]} · se cambia en Ajustes`;
-    this.add.text(cx, CONFIG.alto - 24, ayuda, ESTILOS.ayuda).setOrigin(0.5);
+    encajar(this.add.text(cx, CONFIG.alto - 24, ayuda, ESTILOS.ayuda).setOrigin(0.5), CONFIG.ancho - 40);
 
     this.orbe = new OrbView(this, getInput(this));
   }

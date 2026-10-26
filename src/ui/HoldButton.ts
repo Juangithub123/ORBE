@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import { CONFIG } from '../config';
 import { PALETA } from '../palette';
 import type { InputManager } from '../input/InputManager';
-import { ESTILOS } from './text';
+import { ESTILOS, encajar } from './text';
 
 // Botón que se activa manteniendo el CENTRO del orbe encima durante holdMs.
 // Se llena de izquierda a derecha; si el orbe sale, se vacía rápido.
@@ -11,6 +11,8 @@ import { ESTILOS } from './text';
 // También se activa con un clic o un toque (para usarlo sin teclado, por ejemplo en una tablet).
 
 const VACIADO = 3;
+/** Margen (px) entre el texto y el borde del botón. */
+const MARGEN = 20;
 
 export class HoldButton {
   private g: Phaser.GameObjects.Graphics;
@@ -41,8 +43,10 @@ export class HoldButton {
       .on('pointerup', () => this.activar());
   }
 
+  /** Cambia el texto; si no entra en el botón, se achica. */
   setTexto(etiqueta: string) {
-    this.texto.setText(etiqueta);
+    if (etiqueta === this.texto.text) return this;
+    encajar(this.texto.setText(etiqueta), this.ancho - MARGEN * 2);
     return this;
   }
 
@@ -67,7 +71,8 @@ export class HoldButton {
   activar() {
     if (!this.habilitado) return;
     // Fase 6: acorde corto de botón activado.
-    this.scene.tweens.add({ targets: this.texto, scale: { from: 1.15, to: 1 }, duration: 200, ease: 'Quad.easeOut' });
+    const escala = Math.min(1, (this.ancho - MARGEN * 2) / this.texto.width);
+    this.scene.tweens.add({ targets: this.texto, scale: { from: escala * 1.15, to: escala }, duration: 200, ease: 'Quad.easeOut' });
     this.alActivar();
   }
 
