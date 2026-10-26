@@ -3,7 +3,7 @@ import { CONFIG } from '../config';
 import { PALETA } from '../palette';
 import { InputManager } from '../input/InputManager';
 import { cargarAjustes } from '../storage/settings';
-import { ESCENAS } from './shared';
+import { ESCENAS, claveNivel } from './shared';
 
 // Carga los recursos, lee los ajustes guardados y crea el InputManager (todavía sin cámara).
 
@@ -25,11 +25,21 @@ export class BootScene extends Phaser.Scene {
       barra.fillRect(x, y - 6, ancho * p, 12);
     });
 
+    // Primero la lista de niveles; cuando llega, se encolan los .tmj en el orden de la lista.
+    this.load.once('filecomplete-json-niveles', (_k: string, _t: string, lista: string[]) => {
+      for (const archivo of lista) this.load.json(claveNivel(archivo), `levels/${archivo}`);
+    });
     this.load.json('niveles', 'levels/niveles.json');
-    // Fase 2: acá se cargan también los .tmj de cada nivel.
   }
 
   create() {
+    // Textura chica y redonda para las partículas (roca rota, moneda).
+    const g = this.add.graphics();
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(8, 8, 8);
+    g.generateTexture('chispa', 16, 16);
+    g.destroy();
+
     const ajustes = cargarAjustes();
     this.registry.set('ajustes', ajustes);
     this.registry.set('niveles', this.cache.json.get('niveles') as string[]);

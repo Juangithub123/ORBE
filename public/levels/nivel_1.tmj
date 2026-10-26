@@ -1,0 +1,604 @@
+{
+ "compressionlevel": -1,
+ "class": "nivel",
+ "height": 135,
+ "infinite": false,
+ "layers": [
+  {
+   "draworder": "topdown",
+   "id": 1,
+   "name": "objetos",
+   "objects": [
+    {
+     "id": 1,
+     "name": "",
+     "type": "piedra",
+     "x": 0,
+     "y": 3330,
+     "width": 400,
+     "height": 140,
+     "rotation": 0,
+     "visible": true
+    },
+    {
+     "id": 2,
+     "name": "",
+     "type": "piedra",
+     "x": 880,
+     "y": 3330,
+     "width": 400,
+     "height": 140,
+     "rotation": 0,
+     "visible": true
+    },
+    {
+     "id": 3,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 3560,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 4,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 3475,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 5,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 3390,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 6,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 3305,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 7,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 3220,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 8,
+     "name": "",
+     "type": "piedra",
+     "x": 0,
+     "y": 2810,
+     "width": 720,
+     "height": 160,
+     "rotation": 0,
+     "visible": true
+    },
+    {
+     "id": 9,
+     "name": "",
+     "type": "punto",
+     "x": 700,
+     "y": 3140,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 10,
+     "name": "",
+     "type": "punto",
+     "x": 850,
+     "y": 3080,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 11,
+     "name": "",
+     "type": "punto",
+     "x": 1000,
+     "y": 3020,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 12,
+     "name": "",
+     "type": "punto",
+     "x": 1000,
+     "y": 2940,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 13,
+     "name": "",
+     "type": "punto",
+     "x": 1000,
+     "y": 2860,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 14,
+     "name": "",
+     "type": "punto",
+     "x": 1000,
+     "y": 2780,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 15,
+     "name": "",
+     "type": "piedra",
+     "x": 560,
+     "y": 2310,
+     "width": 720,
+     "height": 160,
+     "rotation": 0,
+     "visible": true
+    },
+    {
+     "id": 16,
+     "name": "",
+     "type": "punto",
+     "x": 900,
+     "y": 2680,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 17,
+     "name": "",
+     "type": "punto",
+     "x": 707,
+     "y": 2627,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 18,
+     "name": "",
+     "type": "punto",
+     "x": 513,
+     "y": 2573,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 19,
+     "name": "",
+     "type": "punto",
+     "x": 320,
+     "y": 2520,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 20,
+     "name": "",
+     "type": "punto",
+     "x": 280,
+     "y": 2440,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 21,
+     "name": "",
+     "type": "punto",
+     "x": 280,
+     "y": 2360,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 22,
+     "name": "",
+     "type": "punto",
+     "x": 280,
+     "y": 2280,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 23,
+     "name": "",
+     "type": "piedra",
+     "x": 420,
+     "y": 1790,
+     "width": 440,
+     "height": 180,
+     "rotation": 0,
+     "visible": true
+    },
+    {
+     "id": 24,
+     "name": "",
+     "type": "punto",
+     "x": 400,
+     "y": 2200,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 25,
+     "name": "",
+     "type": "punto",
+     "x": 310,
+     "y": 2110,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 26,
+     "name": "",
+     "type": "punto",
+     "x": 220,
+     "y": 2020,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 27,
+     "name": "",
+     "type": "punto",
+     "x": 210,
+     "y": 1950,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 28,
+     "name": "",
+     "type": "punto",
+     "x": 210,
+     "y": 1870,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 29,
+     "name": "",
+     "type": "punto",
+     "x": 210,
+     "y": 1790,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 30,
+     "name": "",
+     "type": "punto",
+     "x": 1070,
+     "y": 1880,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 31,
+     "name": "",
+     "type": "piedra",
+     "x": 0,
+     "y": 1470,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "polygon": [
+      {
+       "x": 0,
+       "y": 0
+      },
+      {
+       "x": 340,
+       "y": 0
+      },
+      {
+       "x": 440,
+       "y": -300
+      },
+      {
+       "x": 0,
+       "y": -300
+      }
+     ]
+    },
+    {
+     "id": 32,
+     "name": "",
+     "type": "piedra",
+     "x": 1280,
+     "y": 1470,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "polygon": [
+      {
+       "x": 0,
+       "y": 0
+      },
+      {
+       "x": -340,
+       "y": 0
+      },
+      {
+       "x": -440,
+       "y": -300
+      },
+      {
+       "x": 0,
+       "y": -300
+      }
+     ]
+    },
+    {
+     "id": 33,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 1560,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 34,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 1462,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 35,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 1364,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 36,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 1266,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 37,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 1168,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 38,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 1070,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 39,
+     "name": "",
+     "type": "piedra",
+     "x": 160,
+     "y": 780,
+     "width": 260,
+     "height": 140,
+     "rotation": 0,
+     "visible": true
+    },
+    {
+     "id": 40,
+     "name": "",
+     "type": "piedra",
+     "x": 860,
+     "y": 780,
+     "width": 260,
+     "height": 140,
+     "rotation": 0,
+     "visible": true
+    },
+    {
+     "id": 41,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 980,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 42,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 877,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 43,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 773,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 44,
+     "name": "",
+     "type": "punto",
+     "x": 640,
+     "y": 670,
+     "width": 0,
+     "height": 0,
+     "rotation": 0,
+     "visible": true,
+     "point": true
+    },
+    {
+     "id": 45,
+     "name": "",
+     "type": "final",
+     "x": 0,
+     "y": 320,
+     "width": 1280,
+     "height": 240,
+     "rotation": 0,
+     "visible": true
+    }
+   ],
+   "opacity": 1,
+   "type": "objectgroup",
+   "visible": true,
+   "x": 0,
+   "y": 0
+  }
+ ],
+ "nextlayerid": 2,
+ "nextobjectid": 46,
+ "orientation": "orthogonal",
+ "properties": [
+  {
+   "name": "nombre",
+   "type": "string",
+   "value": "Primer paso"
+  }
+ ],
+ "renderorder": "right-down",
+ "tiledversion": "1.12.2",
+ "tileheight": 32,
+ "tilesets": [],
+ "tilewidth": 32,
+ "type": "map",
+ "version": "1.10",
+ "width": 40
+}

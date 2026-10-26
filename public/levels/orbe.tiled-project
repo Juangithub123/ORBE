@@ -1,0 +1,89 @@
+{
+    "automappingRulesFile": "",
+    "commands": [
+    ],
+    "compatibilityVersion": 1100,
+    "extensionsPath": "extensions",
+    "folders": [
+        "."
+    ],
+    "properties": [
+    ],
+    "propertyTypes": [
+        {
+            "color": "#ffffb8ba",
+            "drawFill": true,
+            "id": 1,
+            "members": [
+            ],
+            "name": "piedra",
+            "type": "class",
+            "useAs": [
+                "object"
+            ]
+        },
+        {
+            "color": "#ffffb070",
+            "drawFill": true,
+            "id": 2,
+            "members": [
+                {
+                    "name": "radioMin",
+                    "type": "float",
+                    "value": 0
+                }
+            ],
+            "name": "piedra_fragil",
+            "type": "class",
+            "useAs": [
+                "object"
+            ]
+        },
+        {
+            "color": "#ffffff80",
+            "drawFill": true,
+            "id": 3,
+            "members": [
+            ],
+            "name": "punto",
+            "type": "class",
+            "useAs": [
+                "object"
+            ]
+        },
+        {
+            "color": "#ffa8ffc0",
+            "drawFill": true,
+            "id": 4,
+            "members": [
+            ],
+            "name": "final",
+            "type": "class",
+            "useAs": [
+                "object"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 5,
+            "members": [
+                {
+                    "name": "nombre",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "velScrollInicial",
+                    "type": "float",
+                    "value": 0
+                }
+            ],
+            "name": "nivel",
+            "type": "class",
+            "useAs": [
+                "map"
+            ]
+        }
+    ]
+}

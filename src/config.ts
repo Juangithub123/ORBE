@@ -86,6 +86,14 @@ export const CONFIG = {
   /** Pausa (ms) después de atrapar algo, para no atrapar dos cosas seguidas. */
   cooldownAtrapeMs: 400,
 
+  // --- Brillo (bloom) --------------------------------------------------------
+  /** Brillo mínimo (0 a 1) a partir del cual algo "brilla". Más alto = brillan menos cosas. */
+  bloomUmbral: 0.55,
+  /** Qué tan lejos se expande el brillo. */
+  bloomRadio: 4,
+  /** Cuánto brillo se suma a la imagen (0 = nada, 1 = mucho). */
+  bloomIntensidad: 0.4,
+
   // --- Audio ---------------------------------------------------------------
   /** Volumen general inicial (0 a 1). Después se guarda en Ajustes. */
   volumenGeneral: 0.8,

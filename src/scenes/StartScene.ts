@@ -1,7 +1,8 @@
 import * as Phaser from 'phaser';
 import { CONFIG } from '../config';
 import { ESTILOS } from '../ui/text';
-import { ESCENAS, getInput } from './shared';
+import { crearRun } from '../game/RunState';
+import { ESCENAS, getInput, getNiveles, setRun } from './shared';
 
 // "Hacé clic para empezar": los navegadores piden un gesto del usuario
 // para iniciar el audio, la pantalla completa y la cámara.
@@ -39,6 +40,15 @@ export class StartScene extends Phaser.Scene {
     }
 
     const resultado = await getInput(this).start();
+
+    // Depuración: ?nivel=2 arranca directo en ese nivel con un dúo de prueba.
+    const nivel = Number(new URLSearchParams(location.search).get('nivel'));
+    if (nivel >= 1 && nivel <= getNiveles(this).length) {
+      setRun(this, { ...crearRun('PRUEBA'), nivel: nivel - 1 });
+      this.scene.start(ESCENAS.juego);
+      return;
+    }
+
     const aviso = resultado.ok ? undefined : 'No se pudo usar la cámara: se pasó a modo teclado.';
     this.scene.start(ESCENAS.menu, { aviso });
   }

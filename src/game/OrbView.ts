@@ -28,6 +28,11 @@ export class OrbView {
     this.radioVisible = input.orb.radio;
   }
 
+  /** Radio tal como se dibuja (sigue al radio real con un leve suavizado). Es el que se usa para chocar. */
+  get radio() {
+    return this.radioVisible;
+  }
+
   /** Posición del centro del orbe en coordenadas de mundo. */
   get mundo(): Vec2 {
     const cam = this.scene.cameras.main;
