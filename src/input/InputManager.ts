@@ -3,6 +3,8 @@ import { calcOrb, type OrbState, type Vec2 } from '../game/orb';
 import { guardarAjustes, type Ajustes, type Zona } from '../storage/settings';
 import { CameraInput, SinAccesoCamara, VideoNoArranca, cerrarCamara } from './CameraInput';
 import { CameraPreview } from './CameraPreview';
+import type { Etapa } from './carga';
+import { PanelCarga } from '../ui/PanelCarga';
 import { HandsInput } from './HandsInput';
 import { KeyboardInput } from './KeyboardInput';
 import type { ModoEntrada, NormPos, PlayerInput } from './PlayerInput';
@@ -34,6 +36,9 @@ export class InputManager {
   /** Último error al arrancar la cámara (para mostrar en Ajustes). */
   error = '';
   readonly preview: CameraPreview;
+  readonly panelCarga: PanelCarga;
+  /** Etapas de la última carga de cámara. Quedan después de un error, para ver en cuál falló. */
+  carga: Etapa[] = [];
 
   private fuente: PlayerInput | null = null;
   private modoActivo: ModoEntrada | null = null;
@@ -45,6 +50,7 @@ export class InputManager {
   constructor(private ajustes: Ajustes) {
     this.orb = calcOrb(this.p1, this.p2, CONFIG);
     this.preview = new CameraPreview(() => (this.fuente instanceof CameraInput ? this.fuente.vista : null), ajustes);
+    this.panelCarga = new PanelCarga(this);
     this.vigilarPermiso();
   }
 
@@ -56,9 +62,10 @@ export class InputManager {
     return this.ajustes;
   }
 
-  /** Mientras carga: qué falta (permiso de cámara, modelo). */
+  /** Mientras carga: qué etapas están en curso (el detalle de cada una está en PanelCarga). */
   get progreso() {
-    return this.fuente instanceof CameraInput ? this.fuente.progreso : 'Cargando…';
+    const enCurso = this.carga.filter((e) => e.estado === 'en curso').map((e) => e.nombre.toLowerCase());
+    return enCurso.length ? `Cargando: ${enCurso.join(', ')}…` : 'Cargando…';
   }
 
   /** Arranca la fuente del modo guardado. Si falla (por ejemplo, sin cámara), cae a teclado y lo informa. */
@@ -71,6 +78,7 @@ export class InputManager {
     this.error = '';
     const fuente = this.crearFuente(modo);
     this.fuente = fuente;
+    this.carga = fuente instanceof CameraInput ? Object.values(fuente.etapas) : [];
     try {
       await fuente.start();
     } catch (error) {

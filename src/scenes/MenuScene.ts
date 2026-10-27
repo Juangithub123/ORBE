@@ -66,7 +66,8 @@ export class MenuScene extends Phaser.Scene {
     const input = getInput(this);
     this.orbe.update(delta);
     this.avisoFalta.setVisible(input.estado !== 'cargando' && input.count < 2);
-    this.estadoEntrada.setText(textoEntrada(input));
+    // Mientras se ve el panel de carga (abajo a la izquierda), esta línea se oculta para no pisarse.
+    this.estadoEntrada.setText(textoEntrada(input)).setVisible(!input.panelCarga.visible);
   }
 }
 
