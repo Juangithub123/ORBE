@@ -1,6 +1,6 @@
 import { HandLandmarker } from '@mediapipe/tasks-vision';
-import { CameraInput, RUTA_MODELOS, cargarFileset } from './CameraInput';
-import { conLimite } from './limite';
+import type { Ajustes } from '../storage/settings';
+import { CameraInput, type Delegado, type WasmFileset } from './CameraInput';
 import type { NormPos } from './PlayerInput';
 
 // Modo Manos: una persona, dos manos. Cada mano es un "jugador".
@@ -8,41 +8,22 @@ import type { NormPos } from './PlayerInput';
 
 const MUNECA = 0;
 
-export class HandsInput extends CameraInput {
-  private detector: HandLandmarker | null = null;
-
-  protected async crearDetector() {
-    const fileset = await cargarFileset();
-    this.detector = await crearConFallback((delegate) =>
-      HandLandmarker.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: `${RUTA_MODELOS}hand_landmarker.task`, delegate },
-        runningMode: 'VIDEO',
-        numHands: 2,
-      }),
-    );
+export class HandsInput extends CameraInput<HandLandmarker> {
+  constructor(ajustes: Ajustes) {
+    super(ajustes, 'hand_landmarker.task', 'manos');
   }
 
-  protected detectar(video: HTMLVideoElement, ts: number) {
-    const r = this.detector!.detectForVideo(video, ts);
+  protected crear(fileset: WasmFileset, modelo: Uint8Array, delegado: Delegado) {
+    return HandLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetBuffer: modelo, delegate: delegado },
+      runningMode: 'VIDEO',
+      numHands: 2,
+    });
+  }
+
+  protected detectar(detector: HandLandmarker, video: HTMLVideoElement, ts: number) {
+    const r = detector.detectForVideo(video, ts);
     const puntos: NormPos[][] = r.landmarks.map((mano) => mano.map((p) => ({ x: p.x, y: p.y })));
     return { jugadores: puntos.map((mano) => mano[MUNECA]), puntos };
-  }
-
-  protected cerrarDetector() {
-    this.detector?.close();
-    this.detector = null;
-  }
-}
-
-/** Si la GPU no termina en este tiempo, se prueba con la CPU (en algunos equipos se cuelga sin dar error). */
-const GPU_MAX_MS = 20_000;
-
-/** Intenta con la GPU y, si no anda, con la CPU. */
-export async function crearConFallback<T>(crear: (delegate: 'GPU' | 'CPU') => Promise<T>): Promise<T> {
-  try {
-    return await conLimite(crear('GPU'), GPU_MAX_MS, 'la GPU no respondió');
-  } catch (e) {
-    console.warn('ORBE: MediaPipe no pudo usar la GPU, se usa la CPU', e);
-    return crear('CPU');
   }
 }

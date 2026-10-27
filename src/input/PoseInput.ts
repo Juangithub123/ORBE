@@ -1,6 +1,6 @@
 import { PoseLandmarker } from '@mediapipe/tasks-vision';
-import { CameraInput, RUTA_MODELOS, cargarFileset } from './CameraInput';
-import { crearConFallback } from './HandsInput';
+import type { Ajustes } from '../storage/settings';
+import { CameraInput, type Delegado, type WasmFileset } from './CameraInput';
 import type { NormPos } from './PlayerInput';
 
 // Modo Pose: dos personas. El punto de cada jugador se elige en Ajustes:
@@ -10,30 +10,24 @@ import type { NormPos } from './PlayerInput';
 const HOMBROS_Y_CADERAS = [11, 12, 23, 24];
 const MUNECAS = [15, 16];
 
-export class PoseInput extends CameraInput {
-  private detector: PoseLandmarker | null = null;
-
-  protected async crearDetector() {
-    const fileset = await cargarFileset();
-    this.detector = await crearConFallback((delegate) =>
-      PoseLandmarker.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: `${RUTA_MODELOS}pose_landmarker_lite.task`, delegate },
-        runningMode: 'VIDEO',
-        numPoses: 2,
-      }),
-    );
+export class PoseInput extends CameraInput<PoseLandmarker> {
+  constructor(ajustes: Ajustes) {
+    super(ajustes, 'pose_landmarker_lite.task', 'cuerpo');
   }
 
-  protected detectar(video: HTMLVideoElement, ts: number) {
-    const r = this.detector!.detectForVideo(video, ts);
+  protected crear(fileset: WasmFileset, modelo: Uint8Array, delegado: Delegado) {
+    return PoseLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetBuffer: modelo, delegate: delegado },
+      runningMode: 'VIDEO',
+      numPoses: 2,
+    });
+  }
+
+  protected detectar(detector: PoseLandmarker, video: HTMLVideoElement, ts: number) {
+    const r = detector.detectForVideo(video, ts);
     const puntos: NormPos[][] = r.landmarks.map((persona) => persona.map((p) => ({ x: p.x, y: p.y })));
     const jugadores = puntos.map((persona) => (this.ajustes.puntoPose === 'muneca' ? munecaMasAlta(persona) : centroTorso(persona)));
     return { jugadores, puntos };
-  }
-
-  protected cerrarDetector() {
-    this.detector?.close();
-    this.detector = null;
   }
 }
 

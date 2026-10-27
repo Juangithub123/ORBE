@@ -136,7 +136,9 @@ export class SettingsScene extends Phaser.Scene {
 
     for (const b of this.botones) b.update(input, delta);
     this.orbe.update(delta);
-    this.estado.setText(time < this.avisoHasta ? this.aviso : this.textoEstado());
+    const aviso = time < this.avisoHasta;
+    // Mientras se ve el panel de carga (abajo a la izquierda), esta línea se oculta para no pisarse.
+    this.estado.setText(aviso ? this.aviso : this.textoEstado()).setVisible(aviso || !input.panelCarga.visible);
   }
 
   private cambiarModo() {
