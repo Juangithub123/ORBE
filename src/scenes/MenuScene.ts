@@ -1,22 +1,23 @@
 import * as Phaser from 'phaser';
 import { CONFIG } from '../config';
-import { PALETA } from '../palette';
 import { OrbView } from '../game/OrbView';
+import { HoldButton } from '../ui/HoldButton';
 import { ESTILOS } from '../ui/text';
 import type { InputManager } from '../input/InputManager';
-import { ESCENAS, NOMBRE_MODO, clicable, getInput, mostrarCamara, setRun } from './shared';
+import { ESCENAS, NOMBRE_MODO, getInput, mostrarCamara, setRun } from './shared';
 
-// Menú principal. En la fase 5 los botones pasan a ser HoldButton (se llenan con el orbe encima).
-// Por ahora se usan con un clic o toque, o con los atajos de teclado.
+// Menú principal. Cada botón se activa manteniendo el orbe encima (como en Ajustes),
+// con un clic o toque, o con su atajo de teclado.
 
 const BOTONES = [
-  { texto: 'Jugar', tecla: 'Enter', escena: ESCENAS.nombre },
-  { texto: 'Ranking', tecla: 'R', escena: ESCENAS.ranking },
-  { texto: 'Ajustes', tecla: 'O', escena: ESCENAS.ajustes },
+  { texto: 'Jugar', tecla: 'ENTER', etiqueta: 'Enter', escena: ESCENAS.nombre },
+  { texto: 'Ranking', tecla: 'R', etiqueta: 'R', escena: ESCENAS.ranking },
+  { texto: 'Ajustes', tecla: 'O', etiqueta: 'O', escena: ESCENAS.ajustes },
 ];
 
 export class MenuScene extends Phaser.Scene {
   private orbe!: OrbView;
+  private botones: HoldButton[] = [];
   private avisoFalta!: Phaser.GameObjects.Text;
   private estadoEntrada!: Phaser.GameObjects.Text;
 
@@ -33,21 +34,14 @@ export class MenuScene extends Phaser.Scene {
     this.add.text(cx, 120, 'ORBE', ESTILOS.titulo).setOrigin(0.5);
     this.add.text(cx, 210, 'La salida es colectiva', ESTILOS.subtitulo).setOrigin(0.5);
 
-    const g = this.add.graphics();
-    BOTONES.forEach((b, i) => {
-      const x = cx + (i - 1) * 320;
-      const y = 400;
-      g.lineStyle(2, PALETA.orbe, 0.7);
-      g.strokeRoundedRect(x - 130, y - 50, 260, 100, 14);
-      this.add.text(x, y - 8, b.texto, ESTILOS.boton).setOrigin(0.5);
-      this.add.text(x, y + 30, `[${b.tecla}]`, ESTILOS.ayuda).setOrigin(0.5);
-      clicable(this.add.zone(x, y, 260, 100), () => this.scene.start(b.escena));
-    });
-
     const kb = this.input.keyboard!;
-    kb.on('keydown-ENTER', () => this.scene.start(ESCENAS.nombre));
-    kb.on('keydown-R', () => this.scene.start(ESCENAS.ranking));
-    kb.on('keydown-O', () => this.scene.start(ESCENAS.ajustes));
+    this.botones = BOTONES.map((b, i) => {
+      const boton = new HoldButton(this, cx + (i - 1) * 320, 400, 260, 100, `${b.texto}\n[${b.etiqueta}]`, () =>
+        this.scene.start(b.escena),
+      );
+      kb.on(`keydown-${b.tecla}`, () => boton.activar());
+      return boton;
+    });
 
     this.avisoFalta = this.add
       .text(cx, CONFIG.alto - 100, 'Párense los dos frente a la cámara', ESTILOS.subtitulo)
@@ -64,6 +58,7 @@ export class MenuScene extends Phaser.Scene {
 
   update(_t: number, delta: number) {
     const input = getInput(this);
+    for (const b of this.botones) b.update(input, delta);
     this.orbe.update(delta);
     this.avisoFalta.setVisible(input.estado !== 'cargando' && input.count < 2);
     // Mientras se ve el panel de carga (abajo a la izquierda), esta línea se oculta para no pisarse.

@@ -47,7 +47,7 @@ export class StartScene extends Phaser.Scene {
     // Depuración: ?nivel=2 arranca directo en ese nivel con un dúo de prueba.
     const nivel = Number(new URLSearchParams(location.search).get('nivel'));
     if (nivel >= 1 && nivel <= getNiveles(this).length) {
-      setRun(this, { ...crearRun('PRUEBA'), nivel: nivel - 1 });
+      setRun(this, { ...crearRun('PRUEBA'), nivel: nivel - 1, prueba: true });
       this.scene.start(ESCENAS.juego);
       return;
     }

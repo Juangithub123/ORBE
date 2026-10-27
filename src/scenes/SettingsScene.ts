@@ -6,7 +6,7 @@ import { borrarRanking } from '../storage/leaderboard';
 import { HoldButton } from '../ui/HoldButton';
 import { ESTILOS } from '../ui/text';
 import { RESOLUCIONES, cambiarResolucion, nombreResolucion } from '../pantalla';
-import { ESCENAS, NOMBRE_MODO, clicable, getInput, mostrarCamara } from './shared';
+import { ESCENAS, NOMBRE_MODO, clicable, getInput, mostrarCamara, siguienteVolumen } from './shared';
 
 // Ajustes del dispositivo (se guardan en localStorage).
 // Cada botón se activa manteniendo el orbe encima, con un clic o toque, o con su número en el teclado.
@@ -201,9 +201,4 @@ export class SettingsScene extends Phaser.Scene {
         return '';
     }
   }
-}
-
-function siguienteVolumen(v: number) {
-  const siguiente = Math.round(v * 10) / 10 + 0.2;
-  return siguiente > 1.0001 ? 0 : Math.min(1, siguiente);
 }

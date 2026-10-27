@@ -8,6 +8,7 @@ import { LevelTransitionScene } from './scenes/LevelTransitionScene';
 import { MenuScene } from './scenes/MenuScene';
 import { NameEntryScene } from './scenes/NameEntryScene';
 import { PauseOverlay } from './scenes/PauseOverlay';
+import { PauseMenuScene } from './scenes/PauseMenuScene';
 import { ResultScene } from './scenes/ResultScene';
 import { SettingsScene } from './scenes/SettingsScene';
 import { StartScene } from './scenes/StartScene';
@@ -43,6 +44,7 @@ const game = new Phaser.Game({
     NameEntryScene,
     GameScene,
     PauseOverlay,
+    PauseMenuScene,
     LevelTransitionScene,
     ResultScene,
     LeaderboardScene,

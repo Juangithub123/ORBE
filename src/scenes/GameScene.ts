@@ -10,11 +10,13 @@ import { Hud } from '../ui/Hud';
 import { ESTILOS } from '../ui/text';
 import { escalaActual } from '../pantalla';
 import { ESCENAS, getInput, getNivel, getNiveles, getRun, mostrarCamara, setRun } from './shared';
+import { EVENTO_SALIR, EVENTO_SEGUIR } from './PauseMenuScene';
 
 // Un nivel del juego: cuenta regresiva, scroll hacia arriba con aceleración, rocas, monedas,
-// meta, vidas y pausa cuando falta un jugador.
+// meta, vidas y pausa cuando falta un jugador. Esc abre la pausa a pedido (PauseMenuScene).
 
-type Estado = 'cuenta' | 'jugando' | 'pausa' | 'completo' | 'perdido';
+/** 'pausa': falta un jugador (se sigue sola). 'menu': pausa a pedido con Esc. */
+type Estado = 'cuenta' | 'jugando' | 'pausa' | 'menu' | 'completo' | 'perdido';
 
 interface RocaViva {
   datos: Roca;
@@ -119,10 +121,18 @@ export class GameScene extends Phaser.Scene {
     this.iniciarCuenta();
 
     // Si la escena se cierra (cambio de nivel, reinicio), se cierra también el overlay de pausa.
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scene.stop(ESCENAS.pausa));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scene.stop(ESCENAS.pausa);
+      this.scene.stop(ESCENAS.menuPausa);
+      this.events.off(EVENTO_SEGUIR);
+      this.events.off(EVENTO_SALIR);
+    });
+    this.events.on(EVENTO_SEGUIR, () => this.cerrarMenu());
+    this.events.on(EVENTO_SALIR, () => this.scene.start(ESCENAS.menu));
 
     const kb = this.input.keyboard!;
     kb.addCapture('F1');
+    kb.on('keydown-ESC', () => (this.estado === 'menu' ? this.cerrarMenu() : this.abrirMenu()));
     kb.on('keydown-F1', () => this.debug.alternar());
     kb.on('keydown-N', () => this.completar());
     kb.on('keydown-G', () => {
@@ -131,6 +141,7 @@ export class GameScene extends Phaser.Scene {
     });
     // 1 reinicia la partida con el mismo dúo, como en TD.
     kb.on('keydown-ONE', () => {
+      if (this.estado === 'menu') return;
       setRun(this, crearRun(this.run.equipo));
       this.scene.restart();
     });
@@ -214,6 +225,24 @@ export class GameScene extends Phaser.Scene {
 
   private reanudar() {
     this.scene.stop(ESCENAS.pausa);
+    this.iniciarCuenta();
+  }
+
+  /** Pausa a pedido (Esc): se congela el nivel y se abre el menú de pausa encima. */
+  private abrirMenu() {
+    if (this.estado === 'completo' || this.estado === 'perdido' || this.estado === 'menu') return;
+    this.estado = 'menu';
+    this.textoCuenta.setVisible(false);
+    this.scene.stop(ESCENAS.pausa);
+    this.orbe.visible = false;
+    this.scene.launch(ESCENAS.menuPausa);
+  }
+
+  /** Vuelve del menú de pausa con cuenta regresiva (si falta un jugador, se pausa sola otra vez). */
+  private cerrarMenu() {
+    if (this.estado !== 'menu') return;
+    this.scene.stop(ESCENAS.menuPausa);
+    this.orbe.visible = true;
     this.iniciarCuenta();
   }
 

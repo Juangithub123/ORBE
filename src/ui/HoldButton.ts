@@ -7,6 +7,8 @@ import { ESTILOS, encajar } from './text';
 // Botón que se activa manteniendo el CENTRO del orbe encima durante holdMs.
 // Se llena de izquierda a derecha; si el orbe sale, se vacía rápido.
 // Después de activarse, hay que sacar el orbe y volver a entrar para activarlo otra vez.
+// Lo mismo al aparecer: si el orbe ya está encima (por ejemplo, venía de un botón de otra pantalla
+// en el mismo lugar), hay que sacarlo primero. Así no se encadenan pantallas sin querer.
 // Si falta un jugador, no se llena.
 // También se activa con un clic o un toque (para usarlo sin teclado, por ejemplo en una tablet).
 
@@ -19,7 +21,8 @@ export class HoldButton {
   private texto: Phaser.GameObjects.Text;
   private zona: Phaser.GameObjects.Zone;
   private progreso = 0;
-  private bloqueado = false;
+  /** Arranca bloqueado: se desbloquea cuando el orbe está afuera. */
+  private bloqueado = true;
   /** Si es false, el botón se ve apagado y no se llena. */
   habilitado = true;
 
@@ -50,10 +53,14 @@ export class HoldButton {
     return this;
   }
 
+  /** Si el punto (x, y) está dentro del botón. */
+  contiene(x: number, y: number) {
+    return Math.abs(x - this.x) <= this.ancho / 2 && Math.abs(y - this.y) <= this.alto / 2;
+  }
+
   update(input: InputManager, deltaMs: number) {
     const { orb } = input;
-    const adentro =
-      Math.abs(orb.x - this.x) <= this.ancho / 2 && Math.abs(orb.y - this.y) <= this.alto / 2 && input.count === 2;
+    const adentro = this.contiene(orb.x, orb.y) && input.count === 2;
     if (!adentro) this.bloqueado = false;
 
     const paso = deltaMs / CONFIG.holdMs;
