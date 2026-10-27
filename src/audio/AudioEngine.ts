@@ -3,8 +3,10 @@ import { CONFIG } from '../config';
 import {
   PASOS_CICLO,
   bpmPara,
+  brilloMusica,
   capasActivas,
   corteAcid,
+  gananciaPorProgreso,
   golpes,
   notaMoneda,
   saturacionBombo,
@@ -22,9 +24,12 @@ import {
 
 type Tone = typeof ToneT;
 
-/** Frecuencia del filtro de la música: abierto y en la pausa ("la música baja y se filtra"). */
+/** Frecuencia del filtro de la música: abierto (menús y resultado) y en la pausa ("la música baja y se filtra").
+ * En el juego depende del progreso (brilloMusica). */
 const FILTRO_ABIERTO = 18000;
 const FILTRO_PAUSA = 400;
+/** Cambios de progreso menores a esto no se aplican al filtro y al volumen (evita rampas en cada frame). */
+const PASO_PROGRESO = 0.01;
 /** Ganancia de la música sobre volumenMusica (dB): los instrumentos están mezclados bajos, para dejar lugar. */
 const GANANCIA_MUSICA_DB = 10;
 /** Cuánto baja la música en la pausa (dB). */
@@ -66,6 +71,8 @@ export class AudioEngine {
   private modo: Modo = 'silencio';
   /** Progreso global de la partida (0 a 1): sube el tempo y suma capas. */
   private progreso = 0;
+  /** Progreso con el que se aplicaron el filtro y el volumen por última vez. */
+  private progresoAplicado = -1;
   private paso = 0;
   private volumen = -1;
   private bpm = 0;
@@ -153,6 +160,7 @@ export class AudioEngine {
     const inst = this.inst;
     if (!inst) return;
     inst.saturacion.wet.value = saturacionBombo(progreso) * 0.7;
+    if (Math.abs(progreso - this.progresoAplicado) >= PASO_PROGRESO) this.aplicarModo();
   }
 
   private bpmObjetivo() {
@@ -163,8 +171,11 @@ export class AudioEngine {
     const inst = this.inst;
     if (!inst) return;
     const pausa = this.modo === 'pausa';
-    inst.filtro.frequency.rampTo(pausa ? FILTRO_PAUSA : FILTRO_ABIERTO, 0.4);
-    inst.musica.volume.rampTo(volumenADb(CONFIG.volumenMusica) + GANANCIA_MUSICA_DB + (pausa ? BAJA_PAUSA_DB : 0), 0.4);
+    const juego = this.modo === 'juego';
+    this.progresoAplicado = this.progreso;
+    inst.filtro.frequency.rampTo(pausa ? FILTRO_PAUSA : juego ? brilloMusica(this.progreso) : FILTRO_ABIERTO, 0.4);
+    const db = volumenADb(CONFIG.volumenMusica) + GANANCIA_MUSICA_DB + (juego ? gananciaPorProgreso(this.progreso) : 0);
+    inst.musica.volume.rampTo(db + (pausa ? BAJA_PAUSA_DB : 0), 0.4);
   }
 
   private tocarPaso(t: number) {

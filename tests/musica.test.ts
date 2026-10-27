@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   PASOS_CICLO,
   bpmPara,
+  brilloMusica,
   capasActivas,
   corteAcid,
+  gananciaPorProgreso,
   golpes,
   notaMoneda,
   progresoGlobal,
@@ -82,6 +84,14 @@ describe('tempo e intensidad', () => {
     expect(corteAcid(1)).toBeCloseTo(3500);
     expect(saturacionBombo(0.5)).toBe(0);
     expect(saturacionBombo(1)).toBe(1);
+  });
+
+  it('el nivel 1 suena más oscuro y más bajo; en el nivel 3 está abierto del todo', () => {
+    expect(brilloMusica(0)).toBeCloseTo(1800);
+    expect(brilloMusica(2 / 3)).toBeCloseTo(18000);
+    expect(brilloMusica(1)).toBeCloseTo(18000);
+    expect(gananciaPorProgreso(0)).toBe(-5);
+    expect(gananciaPorProgreso(1)).toBe(0);
   });
 
   it('progresoGlobal se queda entre 0 y 1', () => {

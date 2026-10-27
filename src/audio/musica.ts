@@ -126,6 +126,20 @@ export function corteAcid(progreso: number) {
   return 250 * Math.pow(14, t);
 }
 
+/**
+ * Brillo de la música (frecuencia de corte del filtro general, Hz): oscura en el nivel 1 y abierta del todo
+ * al llegar al nivel 3. Así el cambio de intensidad entre niveles se nota también en el timbre.
+ */
+export function brilloMusica(progreso: number) {
+  const t = Math.min(1, Math.max(0, progreso / (2 / 3)));
+  return 1800 * Math.pow(10, t);
+}
+
+/** Ganancia extra de la música (dB) según el progreso: el nivel 1 suena más bajo que el 3. */
+export function gananciaPorProgreso(progreso: number) {
+  return -5 + 5 * Math.min(1, Math.max(0, progreso));
+}
+
 /** Saturación del bombo (0 a 1): aparece en el nivel 3. */
 export function saturacionBombo(progreso: number) {
   return Math.min(1, Math.max(0, (progreso - 2 / 3) * 3));
