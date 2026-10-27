@@ -9,6 +9,8 @@ export interface RunState {
   vidas: number;
   /** Índice del nivel actual (0 = primer nivel). */
   nivel: number;
+  /** Partida de prueba (?nivel=N): no entra en el ranking. */
+  prueba?: boolean;
 }
 
 export function crearRun(equipo: string): RunState {

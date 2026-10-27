@@ -15,6 +15,7 @@ export const ESCENAS = {
   nombre: 'NameEntry',
   juego: 'Game',
   pausa: 'Pause',
+  menuPausa: 'PauseMenu',
   transicion: 'LevelTransition',
   resultado: 'Result',
   ranking: 'Leaderboard',
@@ -31,6 +32,12 @@ export const NOMBRE_MODO: Record<ModoEntrada, string> = {
 export function clicable<T extends Phaser.GameObjects.Text | Phaser.GameObjects.Zone>(objeto: T, accion: () => void): T {
   objeto.setInteractive({ useHandCursor: true }).on('pointerup', accion);
   return objeto;
+}
+
+/** Volumen siguiente al tocar el botón: sube de a 20 % y después de 100 % vuelve a 0. */
+export function siguienteVolumen(v: number) {
+  const siguiente = Math.round(v * 10) / 10 + 0.2;
+  return siguiente > 1.0001 ? 0 : Math.min(1, siguiente);
 }
 
 export const getInput = (scene: Phaser.Scene) => scene.registry.get('input') as InputManager;

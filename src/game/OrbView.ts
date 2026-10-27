@@ -19,6 +19,11 @@ export class OrbView {
   /** Si es true, el orbe parpadea (invulnerabilidad). */
   parpadeo = false;
 
+  /** Muestra u oculta el orbe (por ejemplo, durante la pausa, que dibuja el suyo encima). */
+  set visible(v: boolean) {
+    this.g.setVisible(v);
+  }
+
   constructor(
     private scene: Phaser.Scene,
     private input: InputManager,
