@@ -97,6 +97,14 @@ export const CONFIG = {
   // --- Audio ---------------------------------------------------------------
   /** Volumen general inicial (0 a 1). Después se guarda en Ajustes. */
   volumenGeneral: 0.8,
+  /** Volumen de la música (0 a 1), dentro del volumen general. */
+  volumenMusica: 0.55,
+  /** Volumen de los efectos (0 a 1), dentro del volumen general. */
+  volumenEfectos: 0.9,
+  /** Tempo de la música (pulsos por minuto). */
+  bpm: 118,
+  /** Tiempo (ms) entre monedas para que cuenten como racha (cada una suena más aguda). */
+  rachaMonedaMs: 1200,
 
   // --- Depuración ----------------------------------------------------------
   /** Muestra hitboxes, FPS y estado de la entrada. */

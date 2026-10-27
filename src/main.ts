@@ -13,6 +13,8 @@ import { ResultScene } from './scenes/ResultScene';
 import { SettingsScene } from './scenes/SettingsScene';
 import { StartScene } from './scenes/StartScene';
 import type { InputManager } from './input/InputManager';
+import { audio } from './audio/AudioEngine';
+import { ESCENAS } from './scenes/shared';
 import { engancharEscenas, iniciarResolucion, tamanoCanvas } from './pantalla';
 import { cargarParametros } from './storage/parametros';
 import { cargarAjustes } from './storage/settings';
@@ -35,6 +37,8 @@ const game = new Phaser.Game({
     // la miniatura de la cámara y el panel de parámetros, que son HTML encima del juego.
     fullscreenTarget: 'app',
   },
+  // El audio lo maneja AudioEngine (Tone.js); el de Phaser no se usa.
+  audio: { noAudio: true },
   scene: [
     BootScene,
     StartScene,
@@ -54,11 +58,22 @@ const game = new Phaser.Game({
 engancharEscenas(game);
 
 // La entrada se actualiza una vez por frame, antes que las escenas.
+// El audio toma el volumen de Ajustes (y los parámetros del panel) en el mismo momento.
 game.events.on(Phaser.Core.Events.PRE_STEP, (_time: number, delta: number) => {
-  (game.registry.get('input') as InputManager | undefined)?.update(delta);
+  const input = game.registry.get('input') as InputManager | undefined;
+  input?.update(delta);
+  if (input) audio.sincronizar(input.config.volumen);
+});
+
+// Las pantallas de menú tienen música tranquila. El juego, la pausa y el resultado cambian el modo ellos mismos.
+const ESCENAS_MENU: string[] = [ESCENAS.menu, ESCENAS.ajustes, ESCENAS.ranking, ESCENAS.calibracion, ESCENAS.nombre];
+game.events.once(Phaser.Core.Events.READY, () => {
+  for (const s of game.scene.scenes) {
+    if (ESCENAS_MENU.includes(s.sys.settings.key)) s.events.on(Phaser.Scenes.Events.CREATE, () => audio.cambiarModo('menu'));
+  }
 });
 
 new PanelParametros(document.getElementById('app')!);
 
-// Solo en desarrollo: acceso al juego desde la consola del navegador (window.orbe).
-if (import.meta.env.DEV) (window as unknown as { orbe: Phaser.Game }).orbe = game;
+// Solo en desarrollo: acceso al juego y al audio desde la consola del navegador (window.orbe, window.orbeAudio).
+if (import.meta.env.DEV) Object.assign(window, { orbe: game, orbeAudio: audio });

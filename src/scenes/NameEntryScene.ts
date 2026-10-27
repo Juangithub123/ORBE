@@ -7,6 +7,7 @@ import { OrbView } from '../game/OrbView';
 import { crearRun } from '../game/RunState';
 import { ESTILOS } from '../ui/text';
 import { ESCENAS, clicable, getInput, mostrarCamara, setRun } from './shared';
+import { audio } from '../audio/AudioEngine';
 
 // Nombre del dúo: caen letras y los jugadores las atrapan con el orbe (reglas en game/nombre.ts).
 // ⌫ borra una letra, BORRAR borra todo y OK confirma; al llegar al máximo de letras también se confirma.
@@ -135,7 +136,7 @@ export class NameEntryScene extends Phaser.Scene {
   private atrapar(c: Cayendo) {
     const r = atrapar(this.nombre, c.tipo, c.letra, CONFIG.nombreMaxLetras);
     this.nombre = r.nombre;
-    // Fase 6: sonido de letra atrapada.
+    audio.letra(c.tipo);
     this.cayendo = this.cayendo.filter((x) => x !== c);
     this.tweens.add({
       targets: c.obj,
@@ -167,6 +168,7 @@ export class NameEntryScene extends Phaser.Scene {
     if (!this.modoTeclado && LETRA_TECLADO.test(letra)) {
       const r = atrapar(this.nombre, 'letra', letra, CONFIG.nombreMaxLetras);
       this.nombre = r.nombre;
+      audio.letra('letra');
       if (r.confirmar) this.confirmar();
     }
   }

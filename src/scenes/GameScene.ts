@@ -11,6 +11,8 @@ import { ESTILOS } from '../ui/text';
 import { escalaActual } from '../pantalla';
 import { ESCENAS, getInput, getNivel, getNiveles, getRun, mostrarCamara, setRun } from './shared';
 import { EVENTO_SALIR, EVENTO_SEGUIR } from './PauseMenuScene';
+import { audio } from '../audio/AudioEngine';
+import { intensidadPorVelocidad } from '../audio/musica';
 
 // Un nivel del juego: cuenta regresiva, scroll hacia arriba con aceleración, rocas, monedas,
 // meta, vidas y pausa cuando falta un jugador. Esc abre la pausa a pedido (PauseMenuScene).
@@ -58,6 +60,10 @@ export class GameScene extends Phaser.Scene {
   private invulnerableTotal = false;
   private textoInvulnerable!: Phaser.GameObjects.Text;
 
+  /** Monedas seguidas (para que suenen cada vez más agudas). */
+  private racha = 0;
+  private ultimaMoneda = -Infinity;
+
   /** Segundos que faltan de la cuenta regresiva. */
   private cuentaRestante = 0;
   private textoCuenta!: Phaser.GameObjects.Text;
@@ -74,6 +80,10 @@ export class GameScene extends Phaser.Scene {
     this.invulnerableHasta = 0;
     this.tocando = new Set();
     this.vel = this.velInicial;
+    this.racha = 0;
+    this.ultimaMoneda = -Infinity;
+    audio.cambiarModo('juego');
+    audio.cambiarIntensidad(0);
 
     const cam = this.cameras.main;
     cam.setScroll(0, this.nivel.altoMapa - CONFIG.alto);
@@ -166,6 +176,7 @@ export class GameScene extends Phaser.Scene {
       this.tiempoJugando += dt;
       this.vel = Math.min(CONFIG.velScrollMax, this.velInicial + CONFIG.aceleracion * this.tiempoJugando);
       cam.scrollY = Math.max(0, cam.scrollY - this.vel * dt);
+      audio.cambiarIntensidad(intensidadPorVelocidad(this.vel, this.velInicial, CONFIG.velScrollMax));
     }
 
     this.orbe.parpadeo = time < this.invulnerableHasta;
@@ -204,7 +215,7 @@ export class GameScene extends Phaser.Scene {
     if (this.cuentaRestante <= 0) {
       this.estado = 'jugando';
       this.textoCuenta.setVisible(false);
-      // Fase 6: bip agudo (880 Hz) al empezar.
+      audio.bip(true);
     } else if (ahora !== antes) {
       this.mostrarNumero(ahora);
     }
@@ -213,18 +224,19 @@ export class GameScene extends Phaser.Scene {
   private mostrarNumero(n: number) {
     this.textoCuenta.setText(String(n)).setVisible(true).setScale(1.4).setAlpha(1);
     this.tweens.add({ targets: this.textoCuenta, scale: 1, duration: 250, ease: 'Back.easeOut' });
-    // Fase 6: bip de 440 Hz.
+    audio.bip();
   }
 
   private pausar() {
     this.estado = 'pausa';
     this.textoCuenta.setVisible(false);
     this.scene.launch(ESCENAS.pausa);
-    // Fase 6: la música baja y se filtra.
+    audio.cambiarModo('pausa');
   }
 
   private reanudar() {
     this.scene.stop(ESCENAS.pausa);
+    audio.cambiarModo('juego');
     this.iniciarCuenta();
   }
 
@@ -236,6 +248,7 @@ export class GameScene extends Phaser.Scene {
     this.scene.stop(ESCENAS.pausa);
     this.orbe.visible = false;
     this.scene.launch(ESCENAS.menuPausa);
+    audio.cambiarModo('pausa');
   }
 
   /** Vuelve del menú de pausa con cuenta regresiva (si falta un jugador, se pausa sola otra vez). */
@@ -243,6 +256,7 @@ export class GameScene extends Phaser.Scene {
     if (this.estado !== 'menu') return;
     this.scene.stop(ESCENAS.menuPausa);
     this.orbe.visible = true;
+    audio.cambiarModo('juego');
     this.iniciarCuenta();
   }
 
@@ -342,7 +356,7 @@ export class GameScene extends Phaser.Scene {
     for (let i = 0; i < cantidad; i++) {
       this.chispas.explode(8, Phaser.Math.Between(minX, maxX), Phaser.Math.Between(minY, maxY));
     }
-    // Fase 6: sonido de roca rota.
+    audio.rocaRota();
   }
 
   private danio(time: number) {
@@ -351,7 +365,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.shake(CONFIG.shakeMs, CONFIG.shakeIntensidad);
     this.tinte.active = true;
     this.time.delayedCall(CONFIG.flashGolpeMs, () => (this.tinte.active = false));
-    // Fase 6: sonido de golpe.
+    audio.golpe();
     if (this.run.vidas === 0) this.perder();
   }
 
@@ -362,7 +376,11 @@ export class GameScene extends Phaser.Scene {
       if (!circuloTocaCirculo(c, r, m.datos, CONFIG.radioMoneda)) return true;
       this.run.puntaje += CONFIG.valorMoneda;
       this.destello(m.vista);
-      // Fase 6: sonido de moneda (más agudo en racha).
+      // Racha: monedas seguidas (a menos de rachaMonedaMs) suenan cada vez más agudas.
+      const ahora = this.time.now;
+      this.racha = ahora - this.ultimaMoneda <= CONFIG.rachaMonedaMs ? this.racha + 1 : 0;
+      this.ultimaMoneda = ahora;
+      audio.moneda(this.racha);
       return false;
     });
   }
@@ -388,7 +406,7 @@ export class GameScene extends Phaser.Scene {
   private completar() {
     if (this.estado === 'completo' || this.estado === 'perdido') return;
     this.estado = 'completo';
-    // Fase 6: acorde de llegada.
+    audio.llegada();
     if (this.run.nivel + 1 < getNiveles(this).length) {
       this.run.nivel += 1;
       this.scene.start(ESCENAS.transicion);
