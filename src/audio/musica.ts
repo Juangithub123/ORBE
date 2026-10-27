@@ -1,68 +1,61 @@
 // Partitura de la banda sonora (sin Tone.js, para poder probarla).
-// Electrónica tipo synthwave en La menor, en ciclos de 8 compases de 16 pasos (semicorcheas):
-//   A: Am – F – C – G   ·   B: F – G – Em – Am
-// Capas: bombo, palmas, hi-hats, bajo en octavas, colchón de acordes, arpegio y melodía.
-// Qué capas suenan depende del momento (menú, juego, pausa, resultado) y, en el juego, de la intensidad
-// (sube con la velocidad del scroll).
+// Tecno industrial en Mi menor, en ciclos de 8 compases de 16 pasos (semicorcheas).
+// Raíces por compás: E E E E · C C D B (el bajo, el drone y la línea acid las siguen).
+//
+// La partida tiene un "progreso global" de 0 a 1 (nivel actual + avance dentro del nivel, ver progresoGlobal):
+// - el tempo sube con ese progreso, de bpmInicial a bpmFinal (cada nivel arranca más rápido que el anterior);
+// - las capas se suman por nivel, para que se note el cambio: nivel 1 tranquilo, 2 más intenso, 3 al máximo.
 
 export const PASOS_POR_COMPAS = 16;
 export const COMPASES = 8;
 export const PASOS_CICLO = PASOS_POR_COMPAS * COMPASES;
 
 export type Modo = 'silencio' | 'menu' | 'juego' | 'pausa' | 'resultado';
-export type Capa = 'bombo' | 'palmas' | 'hats' | 'hatsRapidos' | 'bajo' | 'colchon' | 'arpegio' | 'melodia';
+export type Capa = 'bombo' | 'rumble' | 'hats' | 'hats16' | 'palmas' | 'metal' | 'drone' | 'acid' | 'stab' | 'ruido';
 
-interface Acorde {
-  /** Nota grave del bajo. */
-  bajo: string;
-  /** Notas del colchón (voces cerradas, sin saltos grandes entre acordes). */
-  colchon: string[];
-  /** Notas del arpegio, de grave a agudo. */
-  arpegio: string[];
-}
+/** Desde qué progreso global entra cada capa en el juego (con 3 niveles: 1/3 ≈ nivel 2, 2/3 ≈ nivel 3). */
+export const ENTRADA_CAPAS: Record<Capa, number> = {
+  bombo: 0,
+  rumble: 0,
+  hats: 0,
+  drone: 0,
+  metal: 0.2,
+  palmas: 1 / 3,
+  hats16: 1 / 3,
+  acid: 1 / 3,
+  stab: 2 / 3,
+  ruido: 2 / 3,
+};
 
-const AM: Acorde = { bajo: 'A1', colchon: ['A3', 'C4', 'E4'], arpegio: ['A4', 'C5', 'E5', 'A5'] };
-const F: Acorde = { bajo: 'F1', colchon: ['A3', 'C4', 'F4'], arpegio: ['F4', 'A4', 'C5', 'F5'] };
-const C: Acorde = { bajo: 'C2', colchon: ['G3', 'C4', 'E4'], arpegio: ['G4', 'C5', 'E5', 'G5'] };
-const G: Acorde = { bajo: 'G1', colchon: ['G3', 'B3', 'D4'], arpegio: ['G4', 'B4', 'D5', 'G5'] };
-const EM: Acorde = { bajo: 'E1', colchon: ['G3', 'B3', 'E4'], arpegio: ['E4', 'G4', 'B4', 'E5'] };
+/** Raíz de cada compás del ciclo. */
+const RAICES = ['E', 'E', 'E', 'E', 'C', 'C', 'D', 'B'];
 
-/** Un acorde por compás. */
-export const PROGRESION: Acorde[] = [AM, F, C, G, F, G, EM, AM];
-
-/** Patrones de 16 pasos (1 = suena). */
+/** Patrones de 16 pasos. */
 const BOMBO = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0];
 const PALMAS = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0];
 const HATS = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0];
-const HATS_RAPIDOS = [1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1];
-/** Bajo en octavas (synthwave): 0 = nota grave, 1 = una octava arriba, -1 = silencio. */
-const BAJO = [0, -1, 1, -1, 0, -1, 1, 0, 0, -1, 1, -1, 0, 1, 0, 1];
-/** Índices dentro del arpegio del acorde. */
-const ARPEGIO = [0, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 2, 3, 2, 1];
+/** Rolling bass: suena en las tres semicorcheas que no son del bombo; el número es la octava extra. */
+const RUMBLE = [-1, 0, 0, 1, -1, 0, 0, 0, -1, 0, 1, 0, -1, 0, 0, 1];
+/** Golpes metálicos sincopados (1 = fuerte, 0.5 = suave). */
+const METAL = [0, 0, 0, 1, 0, 0, 0.5, 0, 0, 1, 0, 0, 0, 0, 0.5, 0];
+/** Línea acid: semitonos sobre la raíz (null = silencio) y acentos. */
+const ACID: (number | null)[] = [0, 0, 12, 0, 3, null, 0, 7, 0, 12, 10, 0, null, 3, 0, 5];
+const ACID_ACENTO = [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0];
+/** Stabs (acorde de quinta) en contratiempos. */
+const STAB = [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0];
 
-/** Melodía de 4 compases que se repite (una nota cada 2 pasos; null = silencio). Pentatónica de La menor. */
-const MELODIA: (string | null)[] = [
-  'E5', null, 'A5', null, 'G5', 'E5', null, 'D5',    'C5', null, null, 'D5', 'E5', null, null, null,
-  'C5', null, 'F5', null, 'E5', 'C5', null, 'A4',    'G4', null, null, 'A4', 'C5', null, 'D5', null,
-];
-
-/** Qué capas suenan en cada momento. En el juego, `intensidad` (0 a 1) agrega capas. */
-export function capasActivas(modo: Modo, intensidad: number): Set<Capa> {
+/** Qué capas suenan. En el juego (y en la pausa) dependen del progreso global. */
+export function capasActivas(modo: Modo, progreso: number): Set<Capa> {
   switch (modo) {
     case 'silencio':
       return new Set();
     case 'menu':
-      return new Set(['colchon', 'arpegio', 'bajo', 'hats']);
+      return new Set(['drone', 'rumble', 'hats']);
     case 'resultado':
-      return new Set(['colchon', 'arpegio']);
+      return new Set(['drone', 'metal']);
     case 'pausa':
-    case 'juego': {
-      const capas = new Set<Capa>(['bombo', 'bajo', 'colchon', 'arpegio', 'hats']);
-      if (intensidad >= 0.25) capas.add('palmas');
-      if (intensidad >= 0.5) capas.add('hatsRapidos');
-      if (intensidad >= 0.65) capas.add('melodia');
-      return capas;
-    }
+    case 'juego':
+      return new Set((Object.keys(ENTRADA_CAPAS) as Capa[]).filter((c) => progreso >= ENTRADA_CAPAS[c]));
   }
 }
 
@@ -70,43 +63,93 @@ export interface Golpes {
   bombo: boolean;
   palmas: boolean;
   hats: boolean;
-  hatsRapidos: boolean;
-  /** Nota del bajo en este paso, o null. */
-  bajo: string | null;
-  /** Acorde del colchón (solo al empezar cada compás), o null. */
-  colchon: string[] | null;
-  arpegio: string;
-  melodia: string | null;
+  /** Semicorchea de hi-hat (capa hats16); `hatAcento` marca las fuertes. */
+  hat16: boolean;
+  hatAcento: boolean;
+  /** Nota del rolling bass, o null. */
+  rumble: string | null;
+  /** Fuerza del golpe metálico (0 = no suena). */
+  metal: number;
+  /** Acorde del drone (al empezar cada compás), o null. */
+  drone: string[] | null;
+  /** Nota de la línea acid, o null; `acidAcento` abre más el filtro. */
+  acid: string | null;
+  acidAcento: boolean;
+  /** Acorde del stab, o null. */
+  stab: string[] | null;
+  /** El barrido de ruido arranca en el último compás del ciclo. */
+  ruido: boolean;
 }
 
-/** Qué toca cada instrumento en el paso `paso` del ciclo (0 a PASOS_CICLO - 1). */
+/** Qué toca cada instrumento en el paso `paso` del ciclo. */
 export function golpes(paso: number): Golpes {
   const p = ((paso % PASOS_CICLO) + PASOS_CICLO) % PASOS_CICLO;
   const compas = Math.floor(p / PASOS_POR_COMPAS);
   const i = p % PASOS_POR_COMPAS;
-  const acorde = PROGRESION[compas];
-  const octava = BAJO[i];
+  const raiz = RAICES[compas];
+  const octavaRumble = RUMBLE[i];
+  const semitonoAcid = ACID[i];
   return {
     bombo: BOMBO[i] === 1,
     palmas: PALMAS[i] === 1,
     hats: HATS[i] === 1,
-    hatsRapidos: HATS_RAPIDOS[i] === 1,
-    bajo: octava < 0 ? null : octava === 0 ? acorde.bajo : subirOctava(acorde.bajo),
-    colchon: i === 0 ? acorde.colchon : null,
-    arpegio: acorde.arpegio[ARPEGIO[i]],
-    melodia: p % 2 === 0 ? MELODIA[(p / 2) % MELODIA.length] : null,
+    hat16: true,
+    hatAcento: HATS[i] === 1,
+    rumble: octavaRumble < 0 ? null : nota(raiz, 1 + octavaRumble),
+    metal: METAL[i],
+    drone: i === 0 ? [nota(raiz, 2), transponer(nota(raiz, 2), 7), nota(raiz, 3)] : null,
+    acid: semitonoAcid === null ? null : transponer(nota(raiz, 2), semitonoAcid),
+    acidAcento: ACID_ACENTO[i] === 1,
+    stab: STAB[i] ? [nota(raiz, 3), transponer(nota(raiz, 3), 7), nota(raiz, 4)] : null,
+    ruido: compas === COMPASES - 1 && i === 0,
   };
 }
 
-/** "A1" → "A2". */
-export function subirOctava(nota: string) {
-  const m = nota.match(/^([A-G]#?)(\d)$/);
-  if (!m) throw new Error(`Nota inválida: ${nota}`);
-  return `${m[1]}${Number(m[2]) + 1}`;
+// --- Tempo, progreso e intensidad ---------------------------------------------
+
+/** Progreso global de la partida (0 a 1): nivel actual (desde 0) más el avance dentro de ese nivel. */
+export function progresoGlobal(nivel: number, niveles: number, avanceNivel: number) {
+  if (niveles <= 0) return 0;
+  const avance = Math.min(1, Math.max(0, avanceNivel));
+  return Math.min(1, Math.max(0, (nivel + avance) / niveles));
 }
 
-/** Notas de la moneda: pentatónica de La menor, que sube con la racha (monedas seguidas). */
-const NOTAS_MONEDA = ['A5', 'C6', 'D6', 'E6', 'G6', 'A6', 'C7', 'D7', 'E7'];
+/** Tempo según el momento: fijo en los menús; en el juego sube con el progreso. */
+export function bpmPara(modo: Modo, progreso: number, bpm: { menu: number; inicial: number; final: number }) {
+  if (modo !== 'juego' && modo !== 'pausa') return bpm.menu;
+  return bpm.inicial + (bpm.final - bpm.inicial) * Math.min(1, Math.max(0, progreso));
+}
+
+/** Apertura del filtro de la línea acid (Hz): se abre a lo largo de los niveles 2 y 3. */
+export function corteAcid(progreso: number) {
+  const t = Math.min(1, Math.max(0, (progreso - 1 / 3) / (2 / 3)));
+  return 250 * Math.pow(14, t);
+}
+
+/** Saturación del bombo (0 a 1): aparece en el nivel 3. */
+export function saturacionBombo(progreso: number) {
+  return Math.min(1, Math.max(0, (progreso - 2 / 3) * 3));
+}
+
+// --- Notas ----------------------------------------------------------------------
+
+const NOMBRES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+/** "E" en la octava 2 → "E2". */
+export function nota(raiz: string, octava: number) {
+  return `${raiz}${octava}`;
+}
+
+/** Sube (o baja) una nota en semitonos: transponer("E2", 7) → "B2". */
+export function transponer(n: string, semitonos: number) {
+  const m = n.match(/^([A-G]#?)(-?\d)$/);
+  if (!m) throw new Error(`Nota inválida: ${n}`);
+  const midi = (Number(m[2]) + 1) * 12 + NOMBRES.indexOf(m[1]) + semitonos;
+  return `${NOMBRES[((midi % 12) + 12) % 12]}${Math.floor(midi / 12) - 1}`;
+}
+
+/** Notas de la moneda: pentatónica de Mi menor, que sube con la racha (monedas seguidas). */
+const NOTAS_MONEDA = ['E5', 'G5', 'A5', 'B5', 'D6', 'E6', 'G6', 'A6', 'B6'];
 
 export function notaMoneda(racha: number) {
   return NOTAS_MONEDA[Math.min(NOTAS_MONEDA.length - 1, Math.max(0, racha))];
@@ -116,10 +159,4 @@ export function notaMoneda(racha: number) {
 export function volumenADb(v: number) {
   if (v <= 0.001) return -Infinity;
   return 20 * Math.log10(v * v);
-}
-
-/** Intensidad del juego (0 a 1) según la velocidad del scroll. */
-export function intensidadPorVelocidad(vel: number, velInicial: number, velMax: number) {
-  if (velMax <= velInicial) return 1;
-  return Math.min(1, Math.max(0, (vel - velInicial) / (velMax - velInicial)));
 }

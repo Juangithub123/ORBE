@@ -12,7 +12,7 @@ import { escalaActual } from '../pantalla';
 import { ESCENAS, getInput, getNivel, getNiveles, getRun, mostrarCamara, setRun } from './shared';
 import { EVENTO_SALIR, EVENTO_SEGUIR } from './PauseMenuScene';
 import { audio } from '../audio/AudioEngine';
-import { intensidadPorVelocidad } from '../audio/musica';
+import { progresoGlobal } from '../audio/musica';
 
 // Un nivel del juego: cuenta regresiva, scroll hacia arriba con aceleración, rocas, monedas,
 // meta, vidas y pausa cuando falta un jugador. Esc abre la pausa a pedido (PauseMenuScene).
@@ -83,7 +83,7 @@ export class GameScene extends Phaser.Scene {
     this.racha = 0;
     this.ultimaMoneda = -Infinity;
     audio.cambiarModo('juego');
-    audio.cambiarIntensidad(0);
+    audio.cambiarProgreso(progresoGlobal(this.run.nivel, getNiveles(this).length, 0));
 
     const cam = this.cameras.main;
     cam.setScroll(0, this.nivel.altoMapa - CONFIG.alto);
@@ -176,7 +176,10 @@ export class GameScene extends Phaser.Scene {
       this.tiempoJugando += dt;
       this.vel = Math.min(CONFIG.velScrollMax, this.velInicial + CONFIG.aceleracion * this.tiempoJugando);
       cam.scrollY = Math.max(0, cam.scrollY - this.vel * dt);
-      audio.cambiarIntensidad(intensidadPorVelocidad(this.vel, this.velInicial, CONFIG.velScrollMax));
+      // La música sigue el avance de la partida: nivel actual + cuánto se recorrió de este nivel.
+      const recorrido = this.nivel.altoMapa - CONFIG.alto;
+      const avance = recorrido > 0 ? 1 - cam.scrollY / recorrido : 1;
+      audio.cambiarProgreso(progresoGlobal(this.run.nivel, getNiveles(this).length, avance));
     }
 
     this.orbe.parpadeo = time < this.invulnerableHasta;

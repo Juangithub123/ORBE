@@ -101,8 +101,12 @@ export const CONFIG = {
   volumenMusica: 0.55,
   /** Volumen de los efectos (0 a 1), dentro del volumen general. */
   volumenEfectos: 0.9,
-  /** Tempo de la música (pulsos por minuto). */
-  bpm: 118,
+  /** Tempo de la música en los menús (pulsos por minuto). */
+  bpmMenu: 92,
+  /** Tempo al empezar el primer nivel. Sube con el avance de la partida (cada nivel arranca más rápido). */
+  bpmInicial: 100,
+  /** Tempo al llegar al final del último nivel. */
+  bpmFinal: 136,
   /** Tiempo (ms) entre monedas para que cuenten como racha (cada una suena más aguda). */
   rachaMonedaMs: 1200,
 
