@@ -13,6 +13,8 @@ type Tone = typeof ToneT;
 /** Frecuencia del filtro de la música: abierto y en la pausa ("la música baja y se filtra"). */
 const FILTRO_ABIERTO = 18000;
 const FILTRO_PAUSA = 450;
+/** Ganancia de la música sobre volumenMusica (dB): los instrumentos están mezclados bajos, para dejar lugar. */
+const GANANCIA_MUSICA_DB = 10;
 /** Cuánto baja la música en la pausa (dB). */
 const BAJA_PAUSA_DB = -10;
 
@@ -37,7 +39,7 @@ interface Instrumentos {
   metal: ToneT.MetalSynth;
 }
 
-class AudioEngine {
+export class AudioEngine {
   private T: Tone | null = null;
   private inst: Instrumentos | null = null;
   private cargando: Promise<void> | null = null;
@@ -70,16 +72,27 @@ class AudioEngine {
       .then(async (T) => {
         T.setContext(ctx);
         await T.start();
-        this.inst = armar(T);
-        this.T = T;
-        const transporte = T.getTransport();
-        transporte.bpm.value = CONFIG.bpm;
-        new T.Loop((tiempo) => this.tocarPaso(tiempo), '16n').start(0);
-        transporte.start('+0.1');
-        this.aplicarModo();
+        await this.prepararCon(T);
       })
       .catch((e) => console.warn('ORBE: no se pudo iniciar el audio', e));
     return this.cargando;
+  }
+
+  /**
+   * Crea los instrumentos en el contexto actual de Tone y arranca la música.
+   * Sirve también para renderizar sin tiempo real (Tone.Offline), por ejemplo para escuchar una muestra.
+   */
+  async prepararCon(T: Tone) {
+    const { instrumentos, listo } = armar(T);
+    await listo;
+    this.inst = instrumentos;
+    this.T = T;
+    const transporte = T.getTransport();
+    transporte.bpm.value = CONFIG.bpm;
+    this.bpm = CONFIG.bpm;
+    new T.Loop((tiempo) => this.tocarPaso(tiempo), '16n').start(0);
+    transporte.start('+0.1');
+    this.aplicarModo();
   }
 
   /** Lo llama el juego una vez por frame: aplica el volumen de Ajustes y los parámetros de audio del panel. */
@@ -123,7 +136,7 @@ class AudioEngine {
     if (!inst) return;
     const pausa = this.modo === 'pausa';
     inst.filtro.frequency.rampTo(pausa ? FILTRO_PAUSA : FILTRO_ABIERTO, 0.4);
-    inst.musica.volume.rampTo(volumenADb(CONFIG.volumenMusica) + (pausa ? BAJA_PAUSA_DB : 0), 0.4);
+    inst.musica.volume.rampTo(volumenADb(CONFIG.volumenMusica) + GANANCIA_MUSICA_DB + (pausa ? BAJA_PAUSA_DB : 0), 0.4);
   }
 
   private tocarPaso(t: number) {
@@ -227,7 +240,8 @@ class AudioEngine {
   private con(f: (inst: Instrumentos, ahora: number) => void) {
     if (!this.T || !this.inst) return;
     try {
-      this.ultimoEfecto = Math.max(this.T.now() + 0.01, this.ultimoEfecto + 0.002);
+      // El reloj es el del propio bus de efectos (no el global de Tone): así también anda al renderizar offline.
+      this.ultimoEfecto = Math.max(this.inst.efectos.now() + 0.01, this.ultimoEfecto + 0.002);
       f(this.inst, this.ultimoEfecto);
     } catch (e) {
       console.warn('ORBE: falló un sonido', e);
@@ -235,11 +249,11 @@ class AudioEngine {
   }
 }
 
-/** Crea los instrumentos y la mezcla. */
-function armar(T: Tone): Instrumentos {
+/** Crea los instrumentos y la mezcla. `listo` se cumple cuando la reverb terminó de generarse. */
+function armar(T: Tone): { instrumentos: Instrumentos; listo: Promise<unknown> } {
   const limitador = new T.Limiter(-1).toDestination();
   const filtro = new T.Filter(FILTRO_ABIERTO, 'lowpass').connect(limitador);
-  const musica = new T.Volume(volumenADb(CONFIG.volumenMusica)).connect(filtro);
+  const musica = new T.Volume(volumenADb(CONFIG.volumenMusica) + GANANCIA_MUSICA_DB).connect(filtro);
   const efectos = new T.Volume(volumenADb(CONFIG.volumenEfectos)).connect(limitador);
 
   const reverb = new T.Reverb({ decay: 3.5, wet: 0.35 }).connect(musica);
@@ -266,7 +280,7 @@ function armar(T: Tone): Instrumentos {
     modulationIndex: 32,
     resonance: 7000,
     octaves: 1.5,
-    volume: -32,
+    volume: -28,
   }).connect(musica);
 
   const bajo = new T.MonoSynth({
@@ -280,19 +294,19 @@ function armar(T: Tone): Instrumentos {
   const colchon = new T.PolySynth(T.Synth, {
     oscillator: { type: 'fatsawtooth', count: 3, spread: 30 },
     envelope: { attack: 0.6, decay: 0.4, sustain: 0.7, release: 1.6 },
-    volume: -24,
+    volume: -17,
   }).connect(chorus);
 
   const arpegio = new T.Synth({
     oscillator: { type: 'square' },
     envelope: { attack: 0.002, decay: 0.09, sustain: 0.05, release: 0.08 },
-    volume: -24,
+    volume: -19,
   }).connect(delay);
 
   const melodia = new T.Synth({
     oscillator: { type: 'fatsawtooth', count: 2, spread: 12 },
     envelope: { attack: 0.02, decay: 0.2, sustain: 0.5, release: 0.4 },
-    volume: -20,
+    volume: -15,
   }).connect(delay);
   melodia.connect(reverb);
 
@@ -332,7 +346,10 @@ function armar(T: Tone): Instrumentos {
     volume: -22,
   }).connect(efectos);
 
-  return { musica, efectos, filtro, bombo, palmas, hats, bajo, colchon, arpegio, melodia, bip, campana, acorde, golpeGrave, ruido, ruidoFiltro, metal };
+  return {
+    instrumentos: { musica, efectos, filtro, bombo, palmas, hats, bajo, colchon, arpegio, melodia, bip, campana, acorde, golpeGrave, ruido, ruidoFiltro, metal },
+    listo: reverb.ready,
+  };
 }
 
 /** Único motor de audio del juego. */
