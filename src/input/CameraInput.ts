@@ -80,6 +80,8 @@ export interface VistaCamara {
   /** Puntos normalizados SIN espejar (tal como vienen de la cámara). */
   puntos: NormPos[][];
   jugadores: NormPos[];
+  /** Pares de índices de `puntos` que forman el esqueleto (de MediaPipe). */
+  conexiones: { start: number; end: number }[];
 }
 
 export abstract class CameraInput<D extends { close(): void }> implements PlayerInput {
@@ -106,6 +108,9 @@ export abstract class CameraInput<D extends { close(): void }> implements Player
       detector: new Etapa('Preparar detector'),
     };
   }
+
+  /** Esqueleto que dibuja la vista previa (pares de índices de los puntos). */
+  protected abstract readonly conexiones: { start: number; end: number }[];
 
   /** Crea el detector de MediaPipe con el motor y el modelo ya descargados. */
   protected abstract crear(fileset: WasmFileset, modelo: Uint8Array, delegado: Delegado): Promise<D>;
@@ -223,7 +228,7 @@ export abstract class CameraInput<D extends { close(): void }> implements Player
   }
 
   get vista(): VistaCamara | null {
-    return this.video ? { video: this.video, puntos: this.puntos, jugadores: this.jugadores } : null;
+    return this.video ? { video: this.video, puntos: this.puntos, jugadores: this.jugadores, conexiones: this.conexiones } : null;
   }
 
   private programar() {

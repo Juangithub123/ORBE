@@ -9,6 +9,8 @@ import type { NormPos } from './PlayerInput';
 const MUNECA = 0;
 
 export class HandsInput extends CameraInput<HandLandmarker> {
+  protected readonly conexiones = HandLandmarker.HAND_CONNECTIONS;
+
   constructor(ajustes: Ajustes) {
     super(ajustes, 'hand_landmarker.task', 'manos');
   }

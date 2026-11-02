@@ -12,6 +12,9 @@ export interface Zona {
   y1: number;
 }
 
+/** Cámara durante el juego: nada, miniatura en una esquina o superpuesta a toda la pantalla. */
+export type CamaraEnJuego = 'no' | 'miniatura' | 'superpuesta';
+
 export interface Ajustes {
   modoEntrada: ModoEntrada;
   /** Punto de cada jugador en modo Pose. */
@@ -19,7 +22,7 @@ export interface Ajustes {
   espejar: boolean;
   zonaManos: Zona;
   zonaPose: Zona;
-  mostrarCamaraEnJuego: boolean;
+  camaraEnJuego: CamaraEnJuego;
   volumen: number;
   /** Resolución de dibujo (no cambia la lógica, que siempre es de 1280×720). */
   resolucion: Resolucion;
@@ -35,7 +38,7 @@ export const AJUSTES_POR_DEFECTO: Ajustes = {
   espejar: CONFIG.espejar,
   zonaManos: { x0: 0.1, x1: 0.9, y0: 0.1, y1: 0.9 },
   zonaPose: { x0: 0.15, x1: 0.85, y0: 0.3, y1: 0.7 },
-  mostrarCamaraEnJuego: false,
+  camaraEnJuego: 'superpuesta',
   volumen: CONFIG.volumenGeneral,
   resolucion: 'auto',
   pantallaCompleta: false,

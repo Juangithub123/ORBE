@@ -1,6 +1,7 @@
 import type * as Phaser from 'phaser';
 import type { InputManager } from '../input/InputManager';
 import type { ModoEntrada } from '../input/PlayerInput';
+import type { CamaraEnJuego } from '../storage/settings';
 import type { RunState } from '../game/RunState';
 import { parseTiled, type TiledMap } from '../level/parseTiled';
 import type { LevelData } from '../level/types';
@@ -44,6 +45,23 @@ export const getInput = (scene: Phaser.Scene) => scene.registry.get('input') as 
 
 /** Muestra u oculta la miniatura de la cámara (solo aparece si la entrada es por cámara). */
 export const mostrarCamara = (scene: Phaser.Scene, visible: boolean) => getInput(scene).preview.mostrar(visible);
+
+/** Durante el juego, la cámara se ve como diga Ajustes (o el menú de pausa): no, miniatura o superpuesta. */
+export const mostrarCamaraJuego = (scene: Phaser.Scene) => {
+  const input = getInput(scene);
+  input.preview.mostrar(input.config.camaraEnJuego);
+};
+
+export const NOMBRE_CAMARA: Record<CamaraEnJuego, string> = {
+  no: 'no',
+  miniatura: 'miniatura',
+  superpuesta: 'sobre el juego',
+};
+
+/** Siguiente opción de cámara en el juego: superpuesta → miniatura → no → superpuesta. */
+export function siguienteCamara(c: CamaraEnJuego): CamaraEnJuego {
+  return c === 'superpuesta' ? 'miniatura' : c === 'miniatura' ? 'no' : 'superpuesta';
+}
 
 export const getRun = (scene: Phaser.Scene) => scene.registry.get('run') as RunState | undefined;
 export const setRun = (scene: Phaser.Scene, run: RunState | undefined) => scene.registry.set('run', run);

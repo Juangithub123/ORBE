@@ -11,6 +11,8 @@ const HOMBROS_Y_CADERAS = [11, 12, 23, 24];
 const MUNECAS = [15, 16];
 
 export class PoseInput extends CameraInput<PoseLandmarker> {
+  protected readonly conexiones = PoseLandmarker.POSE_CONNECTIONS;
+
   constructor(ajustes: Ajustes) {
     super(ajustes, 'pose_landmarker_lite.task', 'cuerpo');
   }

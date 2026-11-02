@@ -9,7 +9,7 @@ import { DebugOverlay } from '../ui/DebugOverlay';
 import { Hud } from '../ui/Hud';
 import { ESTILOS } from '../ui/text';
 import { escalaActual } from '../pantalla';
-import { ESCENAS, getInput, getNivel, getNiveles, getRun, mostrarCamara, setRun } from './shared';
+import { ESCENAS, getInput, getNivel, getNiveles, getRun, mostrarCamaraJuego, setRun } from './shared';
 import { EVENTO_SALIR, EVENTO_SEGUIR } from './PauseMenuScene';
 import { audio } from '../audio/AudioEngine';
 import { progresoGlobal } from '../audio/musica';
@@ -73,7 +73,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    mostrarCamara(this, getInput(this).config.mostrarCamaraEnJuego);
+    mostrarCamaraJuego(this);
     this.run = getRun(this)!;
     this.nivel = getNivel(this, this.run.nivel);
     this.tiempoJugando = 0;
