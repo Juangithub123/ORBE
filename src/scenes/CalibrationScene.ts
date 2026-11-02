@@ -6,6 +6,7 @@ import type { Vec2 } from '../game/orb';
 import type { Zona } from '../storage/settings';
 import { ESTILOS } from '../ui/text';
 import { ESCENAS, clicable, getInput, mostrarCamara } from './shared';
+import { audio } from '../audio/AudioEngine';
 
 // Asistente de calibración de la zona de juego (4 pasos).
 // Mientras dura, la entrada usa toda la imagen de la cámara. En cada paso los jugadores llevan
@@ -110,7 +111,7 @@ export class CalibrationScene extends Phaser.Scene {
   private registrar(punto: Vec2) {
     this.puntos.push(punto);
     this.reiniciarQuieto();
-    // Fase 6: sonido de confirmación.
+    audio.confirmar();
     this.paso++;
     if (this.paso < PASOS.length) return;
 

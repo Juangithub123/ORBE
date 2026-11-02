@@ -7,6 +7,7 @@ import { ESTILOS, encajar } from '../ui/text';
 import { HoldButton } from '../ui/HoldButton';
 import { guardarPartida } from '../storage/leaderboard';
 import { CSS } from '../palette';
+import { audio } from '../audio/AudioEngine';
 import { ESCENAS, clicable, getInput, getNiveles, getRun, setRun, mostrarCamara } from './shared';
 
 // GAME OVER / ¡GANARON!, igual que las capturas de TD.
@@ -49,6 +50,8 @@ export class ResultScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     // Guardado en el ranking (una sola vez por partida; las de prueba no cuentan).
+    audio.cambiarModo('resultado');
+    audio.fin(data.gano);
     const fecha = Date.now();
     if (!run.prueba) {
       const puesto = guardarPartida({ equipo: run.equipo, puntaje: run.puntaje, nivel, gano: data.gano, fecha });
@@ -104,7 +107,7 @@ export class ResultScene extends Phaser.Scene {
   private reiniciar() {
     if (this.reiniciando) return;
     this.reiniciando = true;
-    // Fase 6: acorde de botón activado.
+    audio.boton();
     setRun(this, crearRun(getRun(this)!.equipo));
     this.scene.start(ESCENAS.juego);
   }

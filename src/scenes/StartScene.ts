@@ -3,6 +3,7 @@ import { CONFIG } from '../config';
 import { ESTILOS } from '../ui/text';
 import { crearRun } from '../game/RunState';
 import { ESCENAS, getInput, getNiveles, setRun, mostrarCamara } from './shared';
+import { audio } from '../audio/AudioEngine';
 
 // "Hacé clic para empezar": los navegadores piden un gesto del usuario
 // para iniciar el audio, la pantalla completa y la cámara.
@@ -32,7 +33,8 @@ export class StartScene extends Phaser.Scene {
     if (this.arrancando) return;
     this.arrancando = true;
 
-    // Fase 6: AudioEngine.resume().
+    // Tiene que ser acá, durante el clic o la tecla: el navegador solo deja sonar después de un gesto.
+    audio.iniciar();
     const input = getInput(this);
     if (input.config.pantallaCompleta && !this.scale.isFullscreen) {
       try {

@@ -3,6 +3,7 @@ import { CONFIG } from '../config';
 import { PALETA } from '../palette';
 import type { InputManager } from '../input/InputManager';
 import { ESTILOS, encajar } from './text';
+import { audio } from '../audio/AudioEngine';
 
 // Botón que se activa manteniendo el CENTRO del orbe encima durante holdMs.
 // Se llena de izquierda a derecha; si el orbe sale, se vacía rápido.
@@ -77,7 +78,7 @@ export class HoldButton {
   /** Activa el botón (también lo usan los atajos de teclado). */
   activar() {
     if (!this.habilitado) return;
-    // Fase 6: acorde corto de botón activado.
+    audio.boton();
     const escala = Math.min(1, (this.ancho - MARGEN * 2) / this.texto.width);
     this.scene.tweens.add({ targets: this.texto, scale: { from: escala * 1.15, to: escala }, duration: 200, ease: 'Quad.easeOut' });
     this.alActivar();
