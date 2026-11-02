@@ -49,7 +49,11 @@ export class InputManager {
 
   constructor(private ajustes: Ajustes) {
     this.orb = calcOrb(this.p1, this.p2, CONFIG);
-    this.preview = new CameraPreview(() => (this.fuente instanceof CameraInput ? this.fuente.vista : null), ajustes);
+    this.preview = new CameraPreview(
+      () => (this.fuente instanceof CameraInput ? this.fuente.vista : null),
+      () => this.zona,
+      ajustes,
+    );
     this.panelCarga = new PanelCarga(this);
     this.vigilarPermiso();
   }
@@ -133,7 +137,7 @@ export class InputManager {
     if (!this.fuente || this.estado === 'cargando') return;
     const { players } = this.fuente.read();
     this.crudos = [...players].sort((a, b) => a.x - b.x);
-    const enPantalla = this.crudos.map((p) => this.aPantalla(p, this.zonaActual()));
+    const enPantalla = this.crudos.map((p) => this.aPantalla(p, this.zona));
 
     this.countCrudo = Math.min(2, enPantalla.length);
     this.actualizarPresencia(deltaMs);
@@ -168,7 +172,8 @@ export class InputManager {
       });
   }
 
-  private zonaActual(): Zona {
+  /** Zona de juego en uso: la parte de la imagen (ya espejada) que ocupa toda la pantalla. */
+  get zona(): Zona {
     if (this.calibrando) return ZONA_COMPLETA;
     if (this.modoActivo === 'pose') return this.ajustes.zonaPose;
     if (this.modoActivo === 'manos') return this.ajustes.zonaManos;

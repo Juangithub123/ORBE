@@ -35,6 +35,8 @@ export const CONFIG = {
   presenciaPerdidaMs: 400,
   /** Tiempo (ms) con los dos detectados antes de considerarlos presentes otra vez. */
   presenciaVueltaMs: 600,
+  /** Opacidad de la cámara superpuesta al juego (0 = invisible, 1 = tapa el juego). */
+  opacidadCamara: 0.35,
   /** Velocidad de cada jugador en modo teclado (px/s). */
   velTeclado: 500,
 

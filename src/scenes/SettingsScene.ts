@@ -6,7 +6,7 @@ import { borrarRanking } from '../storage/leaderboard';
 import { HoldButton } from '../ui/HoldButton';
 import { ESTILOS } from '../ui/text';
 import { RESOLUCIONES, cambiarResolucion, nombreResolucion } from '../pantalla';
-import { ESCENAS, NOMBRE_MODO, clicable, getInput, mostrarCamara, siguienteVolumen } from './shared';
+import { ESCENAS, NOMBRE_CAMARA, NOMBRE_MODO, clicable, getInput, mostrarCamara, siguienteCamara, siguienteVolumen } from './shared';
 
 // Ajustes del dispositivo (se guardan en localStorage).
 // Cada botón se activa manteniendo el orbe encima, con un clic o toque, o con su número en el teclado.
@@ -66,7 +66,7 @@ export class SettingsScene extends Phaser.Scene {
     this.bPunto = crear(0, 1, () => input.aplicarAjustes({ puntoPose: input.config.puntoPose === 'torso' ? 'muneca' : 'torso' }));
     this.bEspejar = crear(0, 2, () => input.aplicarAjustes({ espejar: !input.config.espejar }));
     this.bCalibrar = crear(0, 3, () => this.scene.start(ESCENAS.calibracion));
-    this.bCamara = crear(0, 4, () => input.aplicarAjustes({ mostrarCamaraEnJuego: !input.config.mostrarCamaraEnJuego }));
+    this.bCamara = crear(0, 4, () => input.aplicarAjustes({ camaraEnJuego: siguienteCamara(input.config.camaraEnJuego) }));
     this.bResolucion = crear(1, 0, () => this.cambiarResolucion());
     this.bPantalla = crear(1, 1, () => this.alternarPantalla());
     this.bVolumen = crear(1, 2, () => input.aplicarAjustes({ volumen: siguienteVolumen(input.config.volumen) }));
@@ -122,7 +122,7 @@ export class SettingsScene extends Phaser.Scene {
     this.bEspejar.setTexto(`Espejar cámara: ${a.espejar ? 'sí' : 'no'}  [3]`);
     this.bCalibrar.setTexto(camara ? 'Calibrar zona de juego  [4]' : 'Calibrar zona (necesita cámara)');
     this.bCalibrar.habilitado = camara && input.estado === 'lista';
-    this.bCamara.setTexto(`Cámara en el juego: ${a.mostrarCamaraEnJuego ? 'sí' : 'no'}  [5]`);
+    this.bCamara.setTexto(`Cámara en el juego: ${NOMBRE_CAMARA[a.camaraEnJuego]}  [5]`);
     this.bResolucion.setTexto(`Resolución: ${nombreResolucion(a.resolucion)}  [6]`);
     this.bPantalla.setTexto(`Pantalla: ${this.scale.isFullscreen ? 'completa' : 'ventana'}  [7]`);
     this.bVolumen.setTexto(`Volumen: ${Math.round(a.volumen * 100)} %  [8]`);
