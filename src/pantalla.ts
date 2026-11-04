@@ -1,5 +1,6 @@
 import type * as Phaser from 'phaser';
 import { CONFIG } from './config';
+import { perfil } from './perfil';
 
 // Resolución de dibujo.
 // La lógica del juego trabaja siempre en CONFIG.ancho × CONFIG.alto (1280×720): niveles, colisiones, entrada.
@@ -10,7 +11,7 @@ import { CONFIG } from './config';
 export type Resolucion = 'auto' | 720 | 1080 | 1440 | 2160;
 export const RESOLUCIONES: Resolucion[] = ['auto', 720, 1080, 1440, 2160];
 
-/** Escala máxima: 4K (2160 / 720). */
+/** Escala máxima a mano: 4K (2160 / 720). La automática además se limita según el perfil (perfil.ts). */
 const ESCALA_MAX = 3;
 
 let escala = 1;
@@ -27,7 +28,8 @@ export function escalaAuto(anchoPx: number, altoPx: number) {
 export function calcularEscala(r: Resolucion) {
   if (r !== 'auto') return r / CONFIG.alto;
   const dpr = window.devicePixelRatio || 1;
-  return escalaAuto(screen.width * dpr, screen.height * dpr);
+  // En una tablet de 2560×1600 la automática daría 2560×1440: en el perfil liviano se queda en 1280×720.
+  return Math.min(perfil().escalaMax, escalaAuto(screen.width * dpr, screen.height * dpr));
 }
 
 /** Tamaño real del canvas para la escala actual. */
@@ -71,4 +73,32 @@ export function nombreResolucion(r: Resolucion) {
   if (r !== 'auto') return `${Math.round((CONFIG.ancho * r) / CONFIG.alto)}×${r}`;
   const { width, height } = tamanoCanvas();
   return `automática (${width}×${height})`;
+}
+
+// --- Celulares y tablets ---------------------------------------------------------
+
+let pedidoDespierto = false;
+
+/**
+ * Pide que la pantalla no se apague sola (Wake Lock): se juega con el cuerpo, sin tocarla, y una tablet
+ * se apagaría a los pocos minutos. Si el navegador lo suelta al ocultarse la pestaña, se vuelve a pedir.
+ */
+export function mantenerPantallaEncendida() {
+  const wakeLock = (navigator as Navigator & { wakeLock?: { request(tipo: 'screen'): Promise<unknown> } }).wakeLock;
+  if (!wakeLock) return;
+  const pedir = () => wakeLock.request('screen').catch((e) => console.warn('ORBE: no se pudo mantener la pantalla encendida', e));
+  void pedir();
+  if (pedidoDespierto) return;
+  pedidoDespierto = true;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') void pedir();
+  });
+}
+
+/** En pantalla completa, traba la orientación horizontal (en celulares y tablets; en el resto no hace nada). */
+export function ponerHorizontal() {
+  const orientacion = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+  orientacion?.lock?.('landscape').catch(() => {
+    // Computadoras y navegadores sin soporte: no hace falta.
+  });
 }

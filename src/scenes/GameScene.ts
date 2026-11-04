@@ -9,6 +9,7 @@ import { DebugOverlay } from '../ui/DebugOverlay';
 import { Hud } from '../ui/Hud';
 import { ESTILOS } from '../ui/text';
 import { escalaActual } from '../pantalla';
+import { perfil } from '../perfil';
 import { ESCENAS, getInput, getNivel, getNiveles, getRun, mostrarCamaraJuego, setRun } from './shared';
 import { EVENTO_SALIR, EVENTO_SEGUIR } from './PauseMenuScene';
 import { audio } from '../audio/AudioEngine';
@@ -88,15 +89,18 @@ export class GameScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setScroll(0, this.nivel.altoMapa - CONFIG.alto);
 
-    // Brillo general, como en TD (todo lo claro brilla).
-    Phaser.Actions.AddEffectBloom(cam, {
-      threshold: CONFIG.bloomUmbral,
-      // El radio es en píxeles reales: con más resolución se agranda para que el brillo se vea igual.
-      blurRadius: CONFIG.bloomRadio * escalaActual(),
-      blurSteps: 4,
-      blurQuality: 1,
-      blendAmount: CONFIG.bloomIntensidad,
-    });
+    // Brillo general, como en TD (todo lo claro brilla). Son varias pasadas sobre toda la pantalla:
+    // es lo más caro de dibujar, así que en el perfil liviano no va (los halos de cada objeto quedan igual).
+    if (perfil().bloom) {
+      Phaser.Actions.AddEffectBloom(cam, {
+        threshold: CONFIG.bloomUmbral,
+        // El radio es en píxeles reales: con más resolución se agranda para que el brillo se vea igual.
+        blurRadius: CONFIG.bloomRadio * escalaActual(),
+        blurSteps: 4,
+        blurQuality: 1,
+        blendAmount: CONFIG.bloomIntensidad,
+      });
+    }
     this.tinte = cam.filters.external.addColorMatrix();
     this.tinte.colorMatrix.set(MATRIZ_GOLPE);
     this.tinte.active = false;
@@ -357,7 +361,7 @@ export class GameScene extends Phaser.Scene {
     const cantidad = Math.min(14, Math.max(4, Math.round(((maxX - minX) * (maxY - minY)) / 6000)));
     this.chispas.setParticleTint(PALETA.fragil);
     for (let i = 0; i < cantidad; i++) {
-      this.chispas.explode(8, Phaser.Math.Between(minX, maxX), Phaser.Math.Between(minY, maxY));
+      this.chispas.explode(perfil().chispas, Phaser.Math.Between(minX, maxX), Phaser.Math.Between(minY, maxY));
     }
     audio.rocaRota();
   }

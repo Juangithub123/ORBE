@@ -1,5 +1,6 @@
 import type * as ToneT from 'tone';
 import { CONFIG } from '../config';
+import { perfil } from '../perfil';
 import {
   PASOS_CICLO,
   bpmPara,
@@ -345,8 +346,9 @@ function armar(T: Tone): { instrumentos: Instrumentos; listo: Promise<unknown> }
   const efectos = new T.Volume(volumenADb(CONFIG.volumenEfectos)).connect(limitador);
 
   // Espacios: una sala grande y oscura (drone, ruido) y una corta y metálica (claps, stabs).
-  const salaGrande = new T.Reverb({ decay: 6, wet: 0.45 }).connect(musica);
-  const salaCorta = new T.Reverb({ decay: 1.4, wet: 0.3 }).connect(musica);
+  // Su duración depende del perfil: una reverb larga es lo más pesado del audio (en el liviano, más cortas).
+  const salaGrande = new T.Reverb({ decay: perfil().reverbGrande, wet: 0.45 }).connect(musica);
+  const salaCorta = new T.Reverb({ decay: perfil().reverbCorta, wet: 0.3 }).connect(musica);
   const eco = new T.FeedbackDelay({ delayTime: '8n.', feedback: 0.35, wet: 0.25 }).connect(musica);
 
   // Bombo: grave y largo; en el nivel 3 pasa por una saturación (wet según el progreso).

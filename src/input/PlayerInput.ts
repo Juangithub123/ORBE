@@ -10,8 +10,11 @@ export interface NormPos {
 export interface PlayerInput {
   start(): Promise<void>;
   stop(): void;
-  /** Posiciones normalizadas, ya espejadas si corresponde. 0, 1 o 2 jugadores detectados. */
-  read(): { players: NormPos[] };
+  /**
+   * Posiciones normalizadas, ya espejadas si corresponde. 0, 1 o 2 jugadores detectados.
+   * `t` (solo con cámara): momento de la detección (ms, performance.now); cambia con cada detección nueva.
+   */
+  read(): { players: NormPos[]; t?: number };
 }
 
 export type ModoEntrada = 'teclado' | 'manos' | 'pose';
