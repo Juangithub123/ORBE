@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { CONFIG } from './config';
 import { PALETA } from './palette';
 import { BootScene } from './scenes/BootScene';
 import { CalibrationScene } from './scenes/CalibrationScene';
@@ -15,15 +16,20 @@ import { StartScene } from './scenes/StartScene';
 import type { InputManager } from './input/InputManager';
 import { audio } from './audio/AudioEngine';
 import { ESCENAS } from './scenes/shared';
-import { engancharEscenas, iniciarResolucion, tamanoCanvas } from './pantalla';
+import { engancharEscenas, iniciarResolucion, ponerHorizontal, tamanoCanvas } from './pantalla';
 import { cargarParametros } from './storage/parametros';
 import { cargarAjustes } from './storage/settings';
+import { elegirPerfil, resolverPerfil } from './perfil';
 import { PanelParametros } from './ui/PanelParametros';
+import { MedidorRendimiento } from './ui/MedidorRendimiento';
 
 // Los parámetros cambiados a mano en el panel se aplican antes de crear el juego.
 cargarParametros();
-// El canvas se crea con la resolución guardada en Ajustes; la lógica sigue en CONFIG.ancho × CONFIG.alto.
-iniciarResolucion(cargarAjustes().resolucion);
+// El canvas se crea con el perfil y la resolución guardados en Ajustes (el perfil se puede cambiar en la
+// pantalla de inicio); la lógica sigue en CONFIG.ancho × CONFIG.alto.
+const ajustesIniciales = cargarAjustes();
+elegirPerfil(resolverPerfil(ajustesIniciales.perfil));
+iniciarResolucion(ajustesIniciales.resolucion);
 
 const game = new Phaser.Game({
   type: Phaser.WEBGL,
@@ -37,6 +43,10 @@ const game = new Phaser.Game({
     // la miniatura de la cámara y el panel de parámetros, que son HTML encima del juego.
     fullscreenTarget: 'app',
   },
+  // GPU de alto rendimiento (en notebooks con dos GPU, la dedicada).
+  render: { powerPreference: 'high-performance' },
+  // En pantallas de 90 o 120 Hz (muchas tablets) no hace falta dibujar más de fpsMax cuadros por segundo.
+  fps: { limit: CONFIG.fpsMax },
   // El audio lo maneja AudioEngine (Tone.js); el de Phaser no se usa.
   audio: { noAudio: true },
   scene: [
@@ -56,6 +66,8 @@ const game = new Phaser.Game({
 });
 
 engancharEscenas(game);
+// En celulares y tablets, al entrar en pantalla completa se traba la orientación horizontal.
+game.scale.on(Phaser.Scale.Events.ENTER_FULLSCREEN, ponerHorizontal);
 
 // La entrada se actualiza una vez por frame, antes que las escenas.
 // El audio toma el volumen de Ajustes (y los parámetros del panel) en el mismo momento.
@@ -63,6 +75,8 @@ game.events.on(Phaser.Core.Events.PRE_STEP, (_time: number, delta: number) => {
   const input = game.registry.get('input') as InputManager | undefined;
   input?.update(delta);
   if (input) audio.sincronizar(input.config.volumen);
+  // fpsMax se puede cambiar desde el panel con el juego andando.
+  if (game.loop.fpsLimit !== CONFIG.fpsMax) game.loop.setFPSLimit(CONFIG.fpsMax);
 });
 
 // Las pantallas de menú tienen música tranquila. El juego, la pausa y el resultado cambian el modo ellos mismos.
@@ -74,6 +88,7 @@ game.events.once(Phaser.Core.Events.READY, () => {
 });
 
 new PanelParametros(document.getElementById('app')!);
+new MedidorRendimiento(game, () => game.registry.get('input') as InputManager | undefined);
 
 // Solo en desarrollo: acceso al juego y al audio desde la consola del navegador (window.orbe, window.orbeAudio).
 if (import.meta.env.DEV) Object.assign(window, { orbe: game, orbeAudio: audio });

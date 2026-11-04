@@ -8,6 +8,8 @@
 
 export const CONFIG = {
   // --- Pantalla ------------------------------------------------------------
+  /** Cuadros por segundo como máximo (0 = los que dé la pantalla). En pantallas de 120 Hz, 60 ahorra la mitad del trabajo. */
+  fpsMax: 60,
   /** Resolución lógica del juego. Se escala a la ventana manteniendo proporción. */
   ancho: 1280,
   alto: 720,
@@ -27,8 +29,18 @@ export const CONFIG = {
   estelaCopias: 7,
 
   // --- Entrada -------------------------------------------------------------
-  /** Suavizado de la posición por frame (0 = no se mueve, 1 = sin suavizado). Como el Filter CHOP de TD. */
-  suavizado: 0.25,
+  /** Suavizado de la posición por frame (0 = no se mueve, 1 = sin suavizado). Como el Filter CHOP de TD. Con cámara, el temblor ya lo saca el filtro de abajo: esto solo une las detecciones (unas 30 por segundo) en un movimiento continuo. */
+  suavizado: 0.5,
+  /** Filtro de la cámara (One Euro): corte con la mano quieta, en Hz. Menos = más suave, pero con más retardo. */
+  filtroCorteMin: 0.8,
+  /** Filtro de la cámara (One Euro): cuánto se abre al moverse rápido. Más = menos retardo en movimientos rápidos. */
+  filtroBeta: 5,
+  /** Manos: el punto de cada mano es el centro de la palma (más estable). Si no, la muñeca, como en TD. */
+  manoCentroPalma: true,
+  /** Confianza mínima para que MediaPipe encuentre una mano o persona nueva (0 a 1). Más bajo = la encuentra antes, con más errores. Se aplica al volver a elegir la entrada. */
+  confianzaDeteccion: 0.5,
+  /** Confianza mínima para seguir una mano o persona ya encontrada (0 a 1). Más bajo = la pierde menos. Se aplica al volver a elegir la entrada. */
+  confianzaSeguimiento: 0.5,
   /** Espeja la cámara: los jugadores se ven como en un espejo. */
   espejar: true,
   /** Tiempo (ms) sin detectar a un jugador antes de considerarlo ausente. */
@@ -115,6 +127,8 @@ export const CONFIG = {
   // --- Depuración ----------------------------------------------------------
   /** Muestra hitboxes, FPS y estado de la entrada. */
   debug: false,
+  /** Medidor de rendimiento arriba a la izquierda: FPS, tiempo de detección, resolución y modo (también con F3). */
+  mostrarRendimiento: false,
 };
 
 export type Config = typeof CONFIG;

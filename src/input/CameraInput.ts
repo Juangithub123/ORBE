@@ -1,6 +1,7 @@
 import { FilesetResolver } from '@mediapipe/tasks-vision';
 import type { Ajustes } from '../storage/settings';
 import type { NormPos, PlayerInput } from './PlayerInput';
+import { perfil } from '../perfil';
 import { Etapa, descargar } from './carga';
 import { conLimite } from './limite';
 
@@ -9,8 +10,9 @@ export type Delegado = 'GPU' | 'CPU';
 
 // Base de las fuentes con cámara (Manos y Pose).
 // - Usa la cámara compartida (640×480) en un <video> oculto.
-// - Corre la detección en un loop propio (requestVideoFrameCallback si existe), separado del update de Phaser.
-// - Guarda el último resultado: read() lo devuelve al instante.
+// - Corre la detección en un loop propio (requestVideoFrameCallback si existe), separado del update de Phaser:
+//   una vez por imagen nueva de la cámara, o menos si el perfil limita las detecciones por segundo.
+// - Guarda el último resultado: read() lo devuelve al instante, con el momento de la detección.
 // La carga va por etapas, cada una con su avance (ver carga.ts y PanelCarga):
 //   cámara (permiso)  ‖  motor de detección (wasm) + modelo (.task)  →  preparar detector (GPU o CPU).
 // El motor y los modelos se descargan desde public/mediapipe (sin internet).
@@ -80,6 +82,8 @@ export interface VistaCamara {
   /** Puntos normalizados SIN espejar (tal como vienen de la cámara). */
   puntos: NormPos[][];
   jugadores: NormPos[];
+  /** Momento de la última detección (ms): si no cambió, los puntos son los mismos. */
+  t: number;
   /** Pares de índices de `puntos` que forman el esqueleto (de MediaPipe). */
   conexiones: { start: number; end: number }[];
 }
@@ -91,6 +95,14 @@ export abstract class CameraInput<D extends { close(): void }> implements Player
   private ultimoTs = 0;
   private jugadores: NormPos[] = [];
   private puntos: NormPos[][] = [];
+  /** Momento de la última detección (ms). */
+  private tDeteccion = 0;
+  /** Tiempo del video de la última imagen analizada (para no analizar dos veces la misma). */
+  private ultimaImagen = -1;
+  /** Cuándo toca la próxima detección, si el perfil limita las detecciones por segundo. */
+  private proximaDeteccion = 0;
+  private msDeteccion = 0;
+  private detecciones: number[] = [];
 
   /** Etapas de la carga, en orden, para mostrarlas con su barra. */
   readonly etapas: { camara: Etapa; motor: Etapa; modelo: Etapa; detector: Etapa };
@@ -224,32 +236,56 @@ export abstract class CameraInput<D extends { close(): void }> implements Player
 
   read() {
     const espejar = this.ajustes.espejar;
-    return { players: this.jugadores.map((p) => ({ x: espejar ? 1 - p.x : p.x, y: p.y })) };
+    return { players: this.jugadores.map((p) => ({ x: espejar ? 1 - p.x : p.x, y: p.y })), t: this.tDeteccion };
   }
 
   get vista(): VistaCamara | null {
-    return this.video ? { video: this.video, puntos: this.puntos, jugadores: this.jugadores, conexiones: this.conexiones } : null;
+    if (!this.video) return null;
+    return { video: this.video, puntos: this.puntos, jugadores: this.jugadores, conexiones: this.conexiones, t: this.tDeteccion };
+  }
+
+  /** Para el medidor de rendimiento: cuánto tarda cada detección (ms, promedio) y cuántas hay por segundo. */
+  get estadisticas() {
+    const ahora = performance.now();
+    this.detecciones = this.detecciones.filter((t) => ahora - t < 1000);
+    return { ms: this.msDeteccion, porSegundo: this.detecciones.length };
   }
 
   private programar() {
     const video = this.video;
     if (!this.activo || !video) return;
-    if ('requestVideoFrameCallback' in video) video.requestVideoFrameCallback(() => this.paso());
-    else requestAnimationFrame(() => this.paso());
+    if ('requestVideoFrameCallback' in video) video.requestVideoFrameCallback((_ahora, datos) => this.paso(datos.mediaTime));
+    // Los tipos de TypeScript lo dan por existente, pero algunos navegadores no lo tienen.
+    else requestAnimationFrame(() => this.paso((video as HTMLVideoElement).currentTime));
   }
 
-  private paso() {
+  private paso(tiempoImagen: number) {
     const video = this.video;
     const detector = this.detector;
     if (!this.activo || !video) return;
-    if (detector && video.readyState >= 2) {
+    const ahora = performance.now();
+    // Sin requestVideoFrameCallback, el loop va con la pantalla y puede ver la misma imagen dos veces.
+    const imagenNueva = tiempoImagen !== this.ultimaImagen;
+    // Límite del perfil: con la cámara a 30 imágenes por segundo y 20 detecciones, se analizan 2 de cada 3.
+    const hz = perfil().deteccionHz;
+    const intervalo = hz > 0 ? 1000 / hz : 0;
+    const toca = intervalo === 0 || ahora >= this.proximaDeteccion - 2;
+    if (detector && video.readyState >= 2 && imagenNueva && toca) {
+      this.ultimaImagen = tiempoImagen;
+      // Si se atrasó mucho (pestaña oculta, pausa), no se intenta recuperar las detecciones perdidas.
+      this.proximaDeteccion = Math.max(this.proximaDeteccion + intervalo, ahora - intervalo);
       // MediaPipe exige timestamps crecientes.
-      const ts = Math.max(performance.now(), this.ultimoTs + 1);
+      const ts = Math.max(ahora, this.ultimoTs + 1);
       this.ultimoTs = ts;
       try {
         const r = this.detectar(detector, video, ts);
         this.jugadores = r.jugadores;
         this.puntos = r.puntos;
+        this.tDeteccion = ts;
+        const ms = performance.now() - ahora;
+        this.msDeteccion = this.msDeteccion === 0 ? ms : this.msDeteccion * 0.9 + ms * 0.1;
+        this.detecciones.push(ahora);
+        if (this.detecciones.length > 120) this.detecciones.splice(0, 60);
       } catch (e) {
         console.warn('ORBE: falló la detección en un frame', e);
       }

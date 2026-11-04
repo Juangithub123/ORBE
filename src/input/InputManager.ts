@@ -5,14 +5,16 @@ import { CameraInput, SinAccesoCamara, VideoNoArranca, cerrarCamara } from './Ca
 import { CameraPreview } from './CameraPreview';
 import type { Etapa } from './carga';
 import { PanelCarga } from '../ui/PanelCarga';
+import { FiltroUnoEuro } from './unoEuro';
 import { HandsInput } from './HandsInput';
 import { KeyboardInput } from './KeyboardInput';
 import type { ModoEntrada, NormPos, PlayerInput } from './PlayerInput';
 import { PoseInput } from './PoseInput';
 
 // Lo único que conocen las escenas sobre la entrada.
-// Elige la fuente según Ajustes, mapea a píxeles de pantalla con la zona de juego,
-// suaviza, ordena a los jugadores por x y aplica histéresis a la presencia.
+// Elige la fuente según Ajustes, ordena a los jugadores por x, filtra el temblor de la cámara (One Euro,
+// una vez por detección), mapea a píxeles de pantalla con la zona de juego, une las detecciones en un
+// movimiento continuo (suavizado por frame) y aplica histéresis a la presencia.
 
 const ZONA_COMPLETA: Zona = { x0: 0, x1: 1, y0: 0, y1: 1 };
 
@@ -26,7 +28,7 @@ export class InputManager {
   count = 2;
   /** Jugadores detectados en el último frame, sin histéresis. */
   countCrudo = 2;
-  /** Posiciones normalizadas del último frame (ya espejadas, sin zona), ordenadas por x. Sirven para calibrar. */
+  /** Posiciones normalizadas (ya espejadas, sin zona), ordenadas por x y, con cámara, filtradas. Sirven para calibrar. */
   crudos: NormPos[] = [];
   orb: OrbState;
   /** Mientras se calibra, se usa toda la imagen de la cámara (sin zona de juego). */
@@ -43,6 +45,10 @@ export class InputManager {
   private fuente: PlayerInput | null = null;
   private modoActivo: ModoEntrada | null = null;
   private desdeCambio = 0;
+  /** Filtro One Euro de cada jugador (de izquierda a derecha), en x y en y. */
+  private filtros = [new FiltroXY(), new FiltroXY()];
+  /** Momento de la última detección filtrada (para filtrar cada detección una sola vez). */
+  private ultimaDeteccion = -1;
   /** Cuenta los arranques: el resultado de un arranque viejo (por ejemplo, un aviso de permiso que se
    * cerró después de cambiar de modo) se descarta y no pisa al modo elegido después. */
   private intento = 0;
@@ -66,6 +72,11 @@ export class InputManager {
     return this.ajustes;
   }
 
+  /** Con cámara: cuánto tarda cada detección y cuántas hay por segundo (para el medidor de rendimiento). */
+  get estadisticasCamara() {
+    return this.fuente instanceof CameraInput && this.estado === 'lista' ? this.fuente.estadisticas : null;
+  }
+
   /** Mientras carga: qué etapas están en curso (el detalle de cada una está en PanelCarga). */
   get progreso() {
     const enCurso = this.carga.filter((e) => e.estado === 'en curso').map((e) => e.nombre.toLowerCase());
@@ -75,6 +86,7 @@ export class InputManager {
   /** Arranca la fuente del modo guardado. Si falla (por ejemplo, sin cámara), cae a teclado y lo informa. */
   async start(): Promise<{ ok: boolean; modo: ModoEntrada; error?: unknown }> {
     this.stop();
+    this.reiniciarFiltros();
     const intento = ++this.intento;
     const modo = this.ajustes.modoEntrada;
     if (modo === 'teclado') cerrarCamara();
@@ -135,8 +147,18 @@ export class InputManager {
   /** Se llama una vez por frame (lo engancha main.ts al loop del juego). */
   update(deltaMs: number) {
     if (!this.fuente || this.estado === 'cargando') return;
-    const { players } = this.fuente.read();
-    this.crudos = [...players].sort((a, b) => a.x - b.x);
+    const { players, t } = this.fuente.read();
+    const ordenados = [...players].sort((a, b) => a.x - b.x).slice(0, 2);
+    if (t === undefined) {
+      // Teclado: no hay temblor que filtrar.
+      this.crudos = ordenados;
+    } else if (t !== this.ultimaDeteccion) {
+      // Cámara: cada detección nueva pasa una vez por el filtro, con su momento real.
+      this.ultimaDeteccion = t;
+      // Si apareció o desapareció alguien, los índices ya no son las mismas personas: se empieza de cero.
+      if (ordenados.length !== this.crudos.length) this.reiniciarFiltros();
+      this.crudos = ordenados.map((p, i) => this.filtros[i].filtrar(p, t / 1000));
+    }
     const enPantalla = this.crudos.map((p) => this.aPantalla(p, this.zona));
 
     this.countCrudo = Math.min(2, enPantalla.length);
@@ -170,6 +192,11 @@ export class InputManager {
       .catch(() => {
         // Sin Permissions API para la cámara: se reintenta a mano.
       });
+  }
+
+  private reiniciarFiltros() {
+    for (const f of this.filtros) f.reiniciar();
+    this.ultimaDeteccion = -1;
   }
 
   /** Zona de juego en uso: la parte de la imagen (ya espejada) que ocupa toda la pantalla. */
@@ -253,4 +280,23 @@ async function describirError(e: unknown): Promise<string> {
   const mensaje = e instanceof Error ? e.message : String(e);
   if (/fetch/i.test(mensaje)) return `No se pudo descargar el modelo de detección (${mensaje}).`;
   return mensaje;
+}
+
+/** Filtro One Euro de un punto (x e y por separado), con los parámetros del panel leídos en cada detección. */
+class FiltroXY {
+  private x = new FiltroUnoEuro();
+  private y = new FiltroUnoEuro();
+
+  filtrar(p: NormPos, t: number): NormPos {
+    for (const f of [this.x, this.y]) {
+      f.corteMin = CONFIG.filtroCorteMin;
+      f.beta = CONFIG.filtroBeta;
+    }
+    return { x: this.x.filtrar(p.x, t), y: this.y.filtrar(p.y, t) };
+  }
+
+  reiniciar() {
+    this.x.reiniciar();
+    this.y.reiniciar();
+  }
 }

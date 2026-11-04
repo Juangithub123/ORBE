@@ -1,6 +1,7 @@
 import { CONFIG } from '../config';
 import type { ModoEntrada } from '../input/PlayerInput';
 import type { Resolucion } from '../pantalla';
+import type { Perfil } from '../perfil';
 
 // Ajustes del dispositivo, guardados en localStorage.
 // Si localStorage falla (modo privado, permisos), se usan los valores por defecto.
@@ -26,6 +27,8 @@ export interface Ajustes {
   volumen: number;
   /** Resolución de dibujo (no cambia la lógica, que siempre es de 1280×720). */
   resolucion: Resolucion;
+  /** Perfil de rendimiento elegido en la pantalla de inicio ('auto' = todavía no se eligió). */
+  perfil: Perfil | 'auto';
   /** Si el juego arranca en pantalla completa (si no, en ventana). Solo se activa desde Ajustes. */
   pantallaCompleta: boolean;
 }
@@ -42,6 +45,7 @@ export const AJUSTES_POR_DEFECTO: Ajustes = {
   volumen: CONFIG.volumenGeneral,
   resolucion: 'auto',
   pantallaCompleta: false,
+  perfil: 'auto',
 };
 
 export function cargarAjustes(): Ajustes {
