@@ -192,8 +192,10 @@ El juego compilado con `vite build --mode electron` (rutas relativas) se sirve d
 ### Publicar una versión
 
 1. Subir `version` en `package.json` (por ejemplo, a `0.3.0`) y mergear a `main`.
-2. Crear y subir el tag: `git tag v0.3.0 && git push origin v0.3.0`.
-3. GitHub Actions (`escritorio.yml`) arma Windows, macOS y Linux y publica la versión en Releases. Las versiones instaladas se actualizan solas.
+2. Publicarla, de cualquiera de estas dos formas:
+   - en GitHub: **Actions → "Versión de escritorio" → Run workflow** (en `main`) → marcar **publicar**;
+   - o subir el tag: `git tag v0.3.0 && git push origin v0.3.0`.
+3. GitHub Actions (`escritorio.yml`) arma Windows, macOS y Linux y publica la versión en Releases (si no había tag, GitHub lo crea al publicar). Las versiones instaladas se actualizan solas.
 
 En cada push a una rama que no sea `main`, el mismo workflow arma los tres sistemas sin publicar y deja los archivos para bajar en la ejecución de Actions (14 días), para probar antes.
 

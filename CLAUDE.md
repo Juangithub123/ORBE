@@ -29,4 +29,4 @@ Para la versión de escritorio: `npm run escritorio` (abre la app) y `npm run di
 ## Publicar
 
 - Web: push a `main` → GitHub Pages.
-- Escritorio: subir `version` en `package.json`, mergear a `main` y subir el tag `vX.Y.Z` → GitHub Actions publica en Releases.
+- Escritorio: subir `version` en `package.json`, mergear a `main` y publicar: Actions → "Versión de escritorio" → Run workflow con "publicar" (o subir el tag `vX.Y.Z`) → GitHub Actions publica en Releases.
