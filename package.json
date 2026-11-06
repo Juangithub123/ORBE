@@ -1,9 +1,12 @@
 {
   "name": "orbe",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "ORBE – La salida es colectiva. Arcade cooperativo para dos jugadores que juegan con el cuerpo.",
+  "author": "ORBE",
+  "homepage": "https://juangithub123.github.io/ORBE/",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "predev": "node scripts/preparar-mediapipe.mjs",
     "dev": "vite",
@@ -13,15 +16,24 @@
     "build:electron": "tsc --noEmit && vite build --mode electron",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "escritorio": "npm run build:electron && electron .",
+    "escritorio:kiosco": "npm run build:electron && electron . --kiosco",
+    "dist": "npm run build:electron && electron-builder --publish never",
+    "dist:win": "npm run build:electron && electron-builder --win --publish never",
+    "dist:mac": "npm run build:electron && electron-builder --mac --publish never",
+    "dist:linux": "npm run build:electron && electron-builder --linux --publish never"
   },
   "dependencies": {
-    "@mediapipe/tasks-vision": "1.1.1",
-    "phaser": "4.2.1",
-    "tone": "15.1.22"
+    "electron-updater": "6.8.11"
   },
   "devDependencies": {
+    "@mediapipe/tasks-vision": "1.1.1",
     "@types/node": "24.19.2",
+    "electron": "44.9.3",
+    "electron-builder": "26.18.0",
+    "phaser": "4.2.1",
+    "tone": "15.1.22",
     "typescript": "5.9.3",
     "vite": "8.3.5",
     "vitest": "5.0.5"

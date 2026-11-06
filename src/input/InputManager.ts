@@ -133,14 +133,20 @@ export class InputManager {
   }
 
   /**
-   * Guarda los ajustes. Si cambió el modo de entrada, reinicia la fuente.
+   * Guarda los ajustes. Si cambió el modo de entrada o la cámara, reinicia la fuente.
    * (Espejar, punto de Pose y zonas se leen en vivo, no hace falta reiniciar.)
    */
   aplicarAjustes(cambios: Partial<Ajustes>) {
     const modoAntes = this.ajustes.modoEntrada;
+    const camaraAntes = this.ajustes.camaraId;
     Object.assign(this.ajustes, cambios);
     guardarAjustes(this.ajustes);
     if (this.ajustes.modoEntrada !== modoAntes) return this.start();
+    // Otra cámara: se apaga la actual y se abre la nueva (si se está usando la cámara).
+    if (this.ajustes.camaraId !== camaraAntes && this.ajustes.modoEntrada !== 'teclado') {
+      cerrarCamara();
+      return this.start();
+    }
     return Promise.resolve({ ok: true, modo: this.ajustes.modoEntrada });
   }
 

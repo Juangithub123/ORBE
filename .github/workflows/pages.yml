@@ -25,7 +25,10 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      # La web no necesita el binario de Electron (solo la versión de escritorio).
       - run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
       - run: npm test
       # prebuild copia el wasm de MediaPipe a public/mediapipe/wasm
       - run: npm run build

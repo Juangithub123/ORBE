@@ -1,0 +1,82 @@
+# Versión de escritorio: Windows (instalador + portable), macOS (.dmg) y Linux (AppImage).
+# - En cada push a una rama que no sea main: solo arma, y deja los archivos para bajar en la ejecución de Actions.
+# - Con un tag vX.Y.Z (igual a la versión de package.json): arma y publica en GitHub Releases.
+#   El instalador de Windows y el AppImage se actualizan solos desde ahí.
+#   Primero se crea la versión como borrador y se publica cuando terminaron los tres sistemas.
+name: Versión de escritorio
+
+on:
+  push:
+    branches-ignore: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  preparar:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: El tag tiene que coincidir con la versión de package.json
+        run: |
+          VERSION="v$(node -p "require('./package.json').version")"
+          if [ "$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "El tag $GITHUB_REF_NAME no coincide con la versión de package.json ($VERSION)."
+            exit 1
+          fi
+      - name: Crear la versión como borrador
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --draft \
+            --title "ORBE $GITHUB_REF_NAME" \
+            --notes "Windows: instalador (se actualiza solo) o portable. macOS: .dmg (sin firmar: la primera vez, clic derecho → Abrir). Linux: AppImage (se actualiza solo)."
+
+  armar:
+    needs: preparar
+    # También corre cuando "preparar" se saltea (push a una rama, sin tag).
+    if: ${{ !failure() && !cancelled() }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      # prebuild:electron copia el wasm de MediaPipe a public/mediapipe/wasm
+      - run: npm run build:electron
+      - name: Armar (y publicar, si es un tag)
+        run: npx electron-builder --publish ${{ startsWith(github.ref, 'refs/tags/v') && 'always' || 'never' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Sin certificado de firma: no se firma (en macOS hay que abrirla con clic derecho → Abrir la primera vez).
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Dejar los archivos para bajar
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ORBE-${{ runner.os }}
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.AppImage
+          retention-days: 14
+
+  publicar:
+    needs: armar
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publicar la versión
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false --repo "$GITHUB_REPOSITORY"

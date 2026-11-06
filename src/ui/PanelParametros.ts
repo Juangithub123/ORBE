@@ -11,6 +11,7 @@ import {
   type ValorParametro,
 } from '../storage/parametros';
 import { FUENTE } from './text';
+import { escritorio } from '../escritorio';
 
 // Panel para ajustar a mano los parámetros de config.ts mientras se juega.
 // Se abre con el botón ⚙ (arriba a la derecha) o con F2. Los cambios se aplican al instante
@@ -69,7 +70,8 @@ export class PanelParametros {
     engranaje.title = 'Parámetros [F2]';
     engranaje.textContent = '⚙';
     engranaje.addEventListener('click', () => this.alternar());
-    contenedor.appendChild(engranaje);
+    // En el kiosco no se muestra (F2 sigue funcionando).
+    if (!escritorio?.kiosco) contenedor.appendChild(engranaje);
 
     this.panel = document.createElement('div');
     this.panel.className = 'orbe-panel';
