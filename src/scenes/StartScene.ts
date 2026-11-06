@@ -7,11 +7,13 @@ import { cambiarResolucion, mantenerPantallaEncendida } from '../pantalla';
 import { datosDeEsteDispositivo, elegirPerfil, perfilActual, perfilRecomendado, type Perfil } from '../perfil';
 import { ESCENAS, clicable, getInput, getNiveles, setRun, mostrarCamara } from './shared';
 import { audio } from '../audio/AudioEngine';
+import { escritorio } from '../escritorio';
 
 // Pantalla de inicio: se elige el modo (liviano o completo) y ese clic arranca el juego.
 // Los navegadores piden un gesto del usuario para iniciar el audio, la pantalla completa y la cámara.
 // La cámara (permiso y modelo) carga en segundo plano: se pasa al menú enseguida y ahí se ve cómo va.
 // ?perfil=liviano|completo preselecciona un modo (para probar sin tocar la pantalla).
+// En el kiosco de escritorio no hay nadie que haga clic: arranca solo con el modo marcado.
 
 const MODOS: { perfil: Perfil; titulo: string; detalle: string; tecla: string }[] = [
   {
@@ -27,6 +29,8 @@ const MODOS: { perfil: Perfil; titulo: string; detalle: string; tecla: string }[
     tecla: '2',
   },
 ];
+/** En el kiosco, cuánto se ve esta pantalla antes de arrancar solo. */
+const KIOSCO_ESPERA_MS = 1500;
 const ANCHO_CAJA = 460;
 const ALTO_CAJA = 160;
 
@@ -76,6 +80,8 @@ export class StartScene extends Phaser.Scene {
     kb?.on('keydown-TWO', () => this.arrancar('completo'));
     kb?.on('keydown-ENTER', () => this.arrancar(marcado));
     kb?.on('keydown-SPACE', () => this.arrancar(marcado));
+
+    if (escritorio?.kiosco) this.time.delayedCall(KIOSCO_ESPERA_MS, () => this.arrancar(marcado));
   }
 
   private arrancar(perfilElegido: Perfil) {
@@ -85,7 +91,8 @@ export class StartScene extends Phaser.Scene {
     // Tiene que ser acá, durante el clic o la tecla: el navegador solo deja sonar después de un gesto.
     audio.iniciar();
     const input = getInput(this);
-    if (input.config.pantallaCompleta && !this.scale.isFullscreen) {
+    // En escritorio la ventana ya se abre como se dejó (electron/main.cjs); en la web hay que pedirlo acá.
+    if (!escritorio && input.config.pantallaCompleta && !this.scale.isFullscreen) {
       try {
         this.scale.startFullscreen();
       } catch {

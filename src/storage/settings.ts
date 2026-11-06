@@ -18,6 +18,9 @@ export type CamaraEnJuego = 'no' | 'miniatura' | 'superpuesta';
 
 export interface Ajustes {
   modoEntrada: ModoEntrada;
+  /** Cámara elegida (deviceId; '' = la predeterminada) y su nombre, para mostrarlo antes de listar las cámaras. */
+  camaraId: string;
+  camaraNombre: string;
   /** Punto de cada jugador en modo Pose. */
   puntoPose: 'torso' | 'muneca';
   espejar: boolean;
@@ -37,6 +40,8 @@ const CLAVE = 'orbe.ajustes';
 
 export const AJUSTES_POR_DEFECTO: Ajustes = {
   modoEntrada: 'teclado',
+  camaraId: '',
+  camaraNombre: '',
   puntoPose: 'torso',
   espejar: CONFIG.espejar,
   zonaManos: { x0: 0.1, x1: 0.9, y0: 0.1, y1: 0.9 },

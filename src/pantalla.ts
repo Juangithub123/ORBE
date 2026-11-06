@@ -1,5 +1,6 @@
 import type * as Phaser from 'phaser';
 import { CONFIG } from './config';
+import { escritorio } from './escritorio';
 import { perfil } from './perfil';
 
 // Resolución de dibujo.
@@ -73,6 +74,20 @@ export function nombreResolucion(r: Resolucion) {
   if (r !== 'auto') return `${Math.round((CONFIG.ancho * r) / CONFIG.alto)}×${r}`;
   const { width, height } = tamanoCanvas();
   return `automática (${width}×${height})`;
+}
+
+// --- Pantalla completa (web o escritorio) ------------------------------------------
+
+/** Si el juego está en pantalla completa: la ventana de Electron en escritorio, el navegador en la web. */
+export function estaEnPantallaCompleta(game: Phaser.Game) {
+  return escritorio ? escritorio.estaEnPantallaCompleta() : game.scale.isFullscreen;
+}
+
+/** En la web, solo funciona durante un clic o una tecla (el navegador lo exige); en escritorio, siempre. */
+export function ponerPantallaCompleta(game: Phaser.Game, completa: boolean) {
+  if (escritorio) escritorio.ponerPantallaCompleta(completa);
+  else if (completa) game.scale.startFullscreen();
+  else game.scale.stopFullscreen();
 }
 
 // --- Celulares y tablets ---------------------------------------------------------

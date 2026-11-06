@@ -43,17 +43,42 @@ async function prepararMotor(etapa: Etapa): Promise<WasmFileset> {
 // permiso. Cada pedido nuevo puede mostrar el aviso del navegador, y si se cierran varios sin responder,
 // Chrome deja de preguntar por un tiempo y rechaza directo ("Permission dismissed").
 let pedidoCamara: Promise<MediaStream> | null = null;
+/** Cámara del pedido en curso ('' = la predeterminada). */
+let dispositivoPedido = '';
 
-/** Abre la cámara, o devuelve la que ya está abierta (o pedida). */
-export function abrirCamara(): Promise<MediaStream> {
+/**
+ * Abre la cámara elegida en Ajustes ('' = la predeterminada), o devuelve la que ya está abierta (o pedida).
+ * Si la elegida no está (por ejemplo, se desenchufó la webcam USB), usa la predeterminada.
+ */
+export function abrirCamara(dispositivo = ''): Promise<MediaStream> {
   if (!navigator.mediaDevices?.getUserMedia) return Promise.reject(new SinAccesoCamara());
-  pedidoCamara ??= navigator.mediaDevices
-    .getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' }, audio: false })
+  if (pedidoCamara && dispositivo !== dispositivoPedido) cerrarCamara();
+  dispositivoPedido = dispositivo;
+  const pedir = (id: string) =>
+    navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, frameRate: { ideal: 30 }, ...(id ? { deviceId: { exact: id } } : { facingMode: 'user' }) },
+      audio: false,
+    });
+  pedidoCamara ??= pedir(dispositivo)
+    .catch((e) => {
+      if (!dispositivo || !(e instanceof DOMException) || !['NotFoundError', 'OverconstrainedError'].includes(e.name)) throw e;
+      console.warn('ORBE: no se encontró la cámara elegida; se usa la predeterminada', e);
+      return pedir('');
+    })
     .catch((e) => {
       pedidoCamara = null;
       throw e;
     });
   return pedidoCamara;
+}
+
+/** Cámaras conectadas. Los nombres solo aparecen después de dar permiso de cámara. */
+export async function listarCamaras(): Promise<{ id: string; nombre: string }[]> {
+  if (!navigator.mediaDevices?.enumerateDevices) return [];
+  const dispositivos = await navigator.mediaDevices.enumerateDevices();
+  return dispositivos
+    .filter((d) => d.kind === 'videoinput' && d.deviceId)
+    .map((d, i) => ({ id: d.deviceId, nombre: d.label || `Cámara ${i + 1}` }));
 }
 
 /** Apaga la cámara (al pasar a teclado). Si todavía se está pidiendo, se apaga apenas llegue. */
@@ -146,7 +171,7 @@ export abstract class CameraInput<D extends { close(): void }> implements Player
     const etapa = this.etapas.camara;
     etapa.empezar('esperando permiso (si el navegador pregunta, tocá «Permitir»)');
     try {
-      const stream = await abrirCamara();
+      const stream = await abrirCamara(this.ajustes.camaraId);
       etapa.detalle = 'abriendo el video';
       const video = document.createElement('video');
       video.muted = true;

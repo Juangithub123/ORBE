@@ -1,0 +1,58 @@
+# Empaquetado de la versión de escritorio (electron-builder).
+# Antes hay que compilar el juego para escritorio: `npm run build:electron` (los scripts dist* ya lo hacen).
+# Las versiones se publican en GitHub Releases desde GitHub Actions (.github/workflows/escritorio.yml).
+
+appId: io.github.juangithub123.orbe
+productName: ORBE
+copyright: ORBE
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  icon: build/icon.png
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: ORBE
+  # Acceso directo extra en modo kiosco.
+  include: build/instalador.nsh
+  artifactName: ORBE-${version}-windows-instalador.${ext}
+portable:
+  artifactName: ORBE-${version}-windows-portable.${ext}
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  category: public.app-category.games
+  icon: build/icon.png
+  extendInfo:
+    NSCameraUsageDescription: ORBE usa la cámara para seguir las manos o el cuerpo de los jugadores.
+dmg:
+  artifactName: ORBE-${version}-macos-${arch}.${ext}
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  category: Game
+  icon: build/icon.png
+appImage:
+  artifactName: ORBE-${version}-linux.${ext}
+
+publish:
+  provider: github
+  owner: Juangithub123
+  repo: ORBE

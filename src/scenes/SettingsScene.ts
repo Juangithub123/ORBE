@@ -2,10 +2,11 @@ import * as Phaser from 'phaser';
 import { CONFIG } from '../config';
 import { OrbView } from '../game/OrbView';
 import type { ModoEntrada } from '../input/PlayerInput';
+import { listarCamaras } from '../input/CameraInput';
 import { borrarRanking } from '../storage/leaderboard';
 import { HoldButton } from '../ui/HoldButton';
 import { ESTILOS } from '../ui/text';
-import { RESOLUCIONES, cambiarResolucion, nombreResolucion } from '../pantalla';
+import { RESOLUCIONES, cambiarResolucion, estaEnPantallaCompleta, nombreResolucion, ponerPantallaCompleta } from '../pantalla';
 import { ESCENAS, NOMBRE_CAMARA, NOMBRE_MODO, clicable, getInput, mostrarCamara, siguienteCamara, siguienteVolumen } from './shared';
 
 // Ajustes del dispositivo (se guardan en localStorage).
@@ -17,18 +18,21 @@ const CONFIRMAR_MS = 5000;
 /** Cuánto se muestra un aviso (por ejemplo, si el navegador no deja pasar a pantalla completa). */
 const AVISO_MS = 5000;
 
-// Dos columnas de cinco botones: a la izquierda la entrada, a la derecha la pantalla y lo demás.
+// Dos columnas: a la izquierda la entrada (seis botones), a la derecha la pantalla y lo demás.
 const ANCHO_BOTON = 540;
-const ALTO_BOTON = 64;
+const ALTO_BOTON = 60;
 const SEPARACION = 30;
-const PRIMERA_FILA = 135;
-const ENTRE_FILAS = 80;
+const PRIMERA_FILA = 125;
+const ENTRE_FILAS = 74;
 
 export class SettingsScene extends Phaser.Scene {
   private orbe!: OrbView;
   private botones: HoldButton[] = [];
   private estado!: Phaser.GameObjects.Text;
   private bEntrada!: HoldButton;
+  private bWebcam!: HoldButton;
+  /** Cámaras conectadas (se listan al entrar y cuando se conecta o desconecta una). */
+  private camaras: { id: string; nombre: string }[] = [];
   private bPunto!: HoldButton;
   private bEspejar!: HoldButton;
   private bCalibrar!: HoldButton;
@@ -63,15 +67,21 @@ export class SettingsScene extends Phaser.Scene {
       return b;
     };
     this.bEntrada = crear(0, 0, () => this.cambiarModo());
-    this.bPunto = crear(0, 1, () => input.aplicarAjustes({ puntoPose: input.config.puntoPose === 'torso' ? 'muneca' : 'torso' }));
-    this.bEspejar = crear(0, 2, () => input.aplicarAjustes({ espejar: !input.config.espejar }));
-    this.bCalibrar = crear(0, 3, () => this.scene.start(ESCENAS.calibracion));
-    this.bCamara = crear(0, 4, () => input.aplicarAjustes({ camaraEnJuego: siguienteCamara(input.config.camaraEnJuego) }));
+    this.bWebcam = crear(0, 1, () => this.cambiarWebcam());
+    this.bPunto = crear(0, 2, () => input.aplicarAjustes({ puntoPose: input.config.puntoPose === 'torso' ? 'muneca' : 'torso' }));
+    this.bEspejar = crear(0, 3, () => input.aplicarAjustes({ espejar: !input.config.espejar }));
+    this.bCalibrar = crear(0, 4, () => this.scene.start(ESCENAS.calibracion));
+    this.bCamara = crear(0, 5, () => input.aplicarAjustes({ camaraEnJuego: siguienteCamara(input.config.camaraEnJuego) }));
     this.bResolucion = crear(1, 0, () => this.cambiarResolucion());
     this.bPantalla = crear(1, 1, () => this.alternarPantalla());
     this.bVolumen = crear(1, 2, () => input.aplicarAjustes({ volumen: siguienteVolumen(input.config.volumen) }));
     this.bRanking = crear(1, 3, () => this.restablecerRanking());
-    const bVolver = crear(1, 4, () => this.scene.start(ESCENAS.menu));
+    const bVolver = crear(1, 5, () => this.scene.start(ESCENAS.menu));
+
+    void this.actualizarCamaras();
+    const alCambiarDispositivos = () => void this.actualizarCamaras();
+    navigator.mediaDevices?.addEventListener('devicechange', alCambiarDispositivos);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => navigator.mediaDevices?.removeEventListener('devicechange', alCambiarDispositivos));
     bVolver.setTexto('Volver  [Esc]');
 
     // Si la cámara falló, un clic en este texto (o R) la reintenta.
@@ -85,6 +95,7 @@ export class SettingsScene extends Phaser.Scene {
     const kb = this.input.keyboard!;
     const atajos: [string, HoldButton][] = [
       ['ONE', this.bEntrada],
+      ['C', this.bWebcam],
       ['TWO', this.bPunto],
       ['THREE', this.bEspejar],
       ['FOUR', this.bCalibrar],
@@ -117,6 +128,7 @@ export class SettingsScene extends Phaser.Scene {
 
     const sinCamara = input.estado === 'error' && a.modoEntrada !== 'teclado';
     this.bEntrada.setTexto(`Entrada: ${NOMBRE_MODO[a.modoEntrada]}${sinCamara ? ' · sin cámara' : ''}  [1]`);
+    this.bWebcam.setTexto(`Webcam: ${a.camaraId ? a.camaraNombre || 'elegida' : 'la predeterminada'}  [C]`);
     this.bPunto.setTexto(`Punto de Pose: ${a.puntoPose === 'torso' ? 'centro del torso' : 'muñeca más alta'}  [2]`);
     this.bPunto.habilitado = a.modoEntrada === 'pose';
     this.bEspejar.setTexto(`Espejar cámara: ${a.espejar ? 'sí' : 'no'}  [3]`);
@@ -124,7 +136,7 @@ export class SettingsScene extends Phaser.Scene {
     this.bCalibrar.habilitado = camara && input.estado === 'lista';
     this.bCamara.setTexto(`Cámara en el juego: ${NOMBRE_CAMARA[a.camaraEnJuego]}  [5]`);
     this.bResolucion.setTexto(`Resolución: ${nombreResolucion(a.resolucion)}  [6]`);
-    this.bPantalla.setTexto(`Pantalla: ${this.scale.isFullscreen ? 'completa' : 'ventana'}  [7]`);
+    this.bPantalla.setTexto(`Pantalla: ${estaEnPantallaCompleta(this.game) ? 'completa' : 'ventana'}  [7]`);
     this.bVolumen.setTexto(`Volumen: ${Math.round(a.volumen * 100)} %  [8]`);
     this.bRanking.setTexto(
       this.rankingBorrado
@@ -153,6 +165,28 @@ export class SettingsScene extends Phaser.Scene {
     input.start().then(() => mostrarCamara(this, true));
   }
 
+  /** Lista las cámaras conectadas (los nombres aparecen después de dar permiso de cámara). */
+  private async actualizarCamaras() {
+    try {
+      this.camaras = await listarCamaras();
+    } catch {
+      this.camaras = [];
+    }
+  }
+
+  /** Pasa a la cámara siguiente: la predeterminada → cada cámara conectada → la predeterminada. */
+  private cambiarWebcam() {
+    const input = getInput(this);
+    if (this.camaras.length === 0) {
+      this.avisar('No se encontraron cámaras (o falta el permiso): elegí Manos o Pose y permití la cámara.');
+      return;
+    }
+    const opciones = [{ id: '', nombre: '' }, ...this.camaras];
+    const i = opciones.findIndex((c) => c.id === input.config.camaraId);
+    const siguiente = opciones[(i + 1) % opciones.length];
+    input.aplicarAjustes({ camaraId: siguiente.id, camaraNombre: siguiente.nombre }).then(() => mostrarCamara(this, true));
+  }
+
   /** Pasa a la resolución siguiente y vuelve a crear la escena, para que los textos se rehagan nítidos. */
   private cambiarResolucion() {
     const input = getInput(this);
@@ -165,10 +199,9 @@ export class SettingsScene extends Phaser.Scene {
 
   /** Alterna pantalla completa / ventana y lo guarda como forma de arrancar el juego. */
   private alternarPantalla() {
-    const completa = !this.scale.isFullscreen;
+    const completa = !estaEnPantallaCompleta(this.game);
     getInput(this).aplicarAjustes({ pantallaCompleta: completa });
-    if (completa) this.scale.startFullscreen();
-    else this.scale.stopFullscreen();
+    ponerPantallaCompleta(this.game, completa);
   }
 
   private avisar(texto: string) {
