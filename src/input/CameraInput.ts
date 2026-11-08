@@ -103,7 +103,8 @@ export class VideoNoArranca extends Error {}
 
 /** Lo que dibuja la vista previa: todos los puntos detectados y el punto que representa a cada jugador. */
 export interface VistaCamara {
-  video: HTMLVideoElement;
+  /** La imagen de la cámara (null con el Kinect: solo se dibujan los esqueletos). */
+  video: HTMLVideoElement | null;
   /** Puntos normalizados SIN espejar (tal como vienen de la cámara). */
   puntos: NormPos[][];
   jugadores: NormPos[];

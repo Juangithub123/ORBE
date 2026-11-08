@@ -1,7 +1,7 @@
 {
   "name": "orbe",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "ORBE – La salida es colectiva. Arcade cooperativo para dos jugadores que juegan con el cuerpo.",
   "author": "ORBE",
   "homepage": "https://juangithub123.github.io/ORBE/",
@@ -22,7 +22,8 @@
     "dist": "npm run build:electron && electron-builder --publish never",
     "dist:win": "npm run build:electron && electron-builder --win --publish never",
     "dist:mac": "npm run build:electron && electron-builder --mac --publish never",
-    "dist:linux": "npm run build:electron && electron-builder --linux --publish never"
+    "dist:linux": "npm run build:electron && electron-builder --linux --publish never",
+    "kinect:simular": "node scripts/simular-kinect.mjs"
   },
   "dependencies": {
     "electron-updater": "6.8.11"
@@ -36,6 +37,7 @@
     "tone": "15.1.22",
     "typescript": "5.9.3",
     "vite": "8.3.5",
-    "vitest": "5.0.5"
+    "vitest": "5.0.5",
+    "ws": "8.18.3"
   }
 }

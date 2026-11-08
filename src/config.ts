@@ -49,6 +49,10 @@ export const CONFIG = {
   presenciaVueltaMs: 600,
   /** Opacidad de la cámara superpuesta al juego (0 = invisible, 1 = tapa el juego). */
   opacidadCamara: 0.35,
+  /** Kinect: puerto del servidor WebSocket de TouchDesigner (Web Server DAT). */
+  kinectPuerto: 9980,
+  /** Kinect: corre el punto de cada jugador hacia abajo (+) o hacia arriba (−), en % del largo del torso (de hombros a cadera). */
+  kinectAjusteAltura: 0,
   /** Velocidad de cada jugador en modo teclado (px/s). */
   velTeclado: 500,
 

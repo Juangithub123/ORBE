@@ -2,6 +2,7 @@ import { CONFIG } from '../config';
 import { calcOrb, type OrbState, type Vec2 } from '../game/orb';
 import { guardarAjustes, type Ajustes, type Zona } from '../storage/settings';
 import { CameraInput, SinAccesoCamara, VideoNoArranca, cerrarCamara } from './CameraInput';
+import { KinectInput, SinKinect } from './KinectInput';
 import { CameraPreview } from './CameraPreview';
 import type { Etapa } from './carga';
 import { PanelCarga } from '../ui/PanelCarga';
@@ -56,7 +57,7 @@ export class InputManager {
   constructor(private ajustes: Ajustes) {
     this.orb = calcOrb(this.p1, this.p2, CONFIG);
     this.preview = new CameraPreview(
-      () => (this.fuente instanceof CameraInput ? this.fuente.vista : null),
+      () => this.fuente?.vista ?? null,
       () => this.zona,
       ajustes,
     );
@@ -74,7 +75,7 @@ export class InputManager {
 
   /** Con cámara: cuánto tarda cada detección y cuántas hay por segundo (para el medidor de rendimiento). */
   get estadisticasCamara() {
-    return this.fuente instanceof CameraInput && this.estado === 'lista' ? this.fuente.estadisticas : null;
+    return this.estado === 'lista' ? (this.fuente?.estadisticas ?? null) : null;
   }
 
   /** Mientras carga: qué etapas están en curso (el detalle de cada una está en PanelCarga). */
@@ -89,7 +90,7 @@ export class InputManager {
     this.reiniciarFiltros();
     const intento = ++this.intento;
     const modo = this.ajustes.modoEntrada;
-    if (modo === 'teclado') cerrarCamara();
+    if (modo === 'teclado' || modo === 'kinect') cerrarCamara();
     this.estado = 'cargando';
     this.error = '';
     const fuente = this.crearFuente(modo);
@@ -143,7 +144,7 @@ export class InputManager {
     guardarAjustes(this.ajustes);
     if (this.ajustes.modoEntrada !== modoAntes) return this.start();
     // Otra cámara: se apaga la actual y se abre la nueva (si se está usando la cámara).
-    if (this.ajustes.camaraId !== camaraAntes && this.ajustes.modoEntrada !== 'teclado') {
+    if (this.ajustes.camaraId !== camaraAntes && (this.ajustes.modoEntrada === 'manos' || this.ajustes.modoEntrada === 'pose')) {
       cerrarCamara();
       return this.start();
     }
@@ -210,6 +211,7 @@ export class InputManager {
     if (this.calibrando) return ZONA_COMPLETA;
     if (this.modoActivo === 'pose') return this.ajustes.zonaPose;
     if (this.modoActivo === 'manos') return this.ajustes.zonaManos;
+    if (this.modoActivo === 'kinect') return this.ajustes.zonaKinect;
     return ZONA_COMPLETA;
   }
 
@@ -219,6 +221,8 @@ export class InputManager {
         return new HandsInput(this.ajustes);
       case 'pose':
         return new PoseInput(this.ajustes);
+      case 'kinect':
+        return new KinectInput(this.ajustes);
       default:
         return new KeyboardInput();
     }
@@ -265,7 +269,7 @@ async function estadoPermiso(): Promise<PermissionState | null> {
 const COMO_PERMITIR = 'Permitila en el candado de la barra de direcciones (Cámara → Permitir).';
 
 async function describirError(e: unknown): Promise<string> {
-  if (e instanceof SinAccesoCamara || e instanceof VideoNoArranca) return e.message;
+  if (e instanceof SinAccesoCamara || e instanceof VideoNoArranca || e instanceof SinKinect) return e.message;
   if (e instanceof DOMException) {
     if (e.name === 'NotAllowedError') {
       if (/system/i.test(e.message)) {

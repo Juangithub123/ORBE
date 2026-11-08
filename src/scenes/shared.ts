@@ -1,6 +1,7 @@
 import type * as Phaser from 'phaser';
 import type { InputManager } from '../input/InputManager';
 import type { ModoEntrada } from '../input/PlayerInput';
+import type { PuntoKinect } from '../input/kinect';
 import type { CamaraEnJuego } from '../storage/settings';
 import type { RunState } from '../game/RunState';
 import { parseTiled, type TiledMap } from '../level/parseTiled';
@@ -27,7 +28,21 @@ export const NOMBRE_MODO: Record<ModoEntrada, string> = {
   pose: 'Pose (2 personas)',
   manos: 'Manos (1 persona)',
   teclado: 'Teclado',
+  kinect: 'Kinect (2 personas)',
 };
+
+/** Modos que usan una cámara o un sensor (calibración, vista de la cámara). */
+export const conSensor = (modo: ModoEntrada | null) => modo === 'manos' || modo === 'pose' || modo === 'kinect';
+
+/** Nombres del punto del Kinect en Ajustes. */
+export const NOMBRE_PUNTO_KINECT: Record<PuntoKinect, string> = {
+  columna: 'columna (abajo del pecho)',
+  hombros: 'centro de los hombros',
+  cadera: 'cadera',
+  cabeza: 'cabeza',
+  mano: 'mano más alta',
+};
+export const PUNTOS_KINECT = Object.keys(NOMBRE_PUNTO_KINECT) as PuntoKinect[];
 
 /** Hace que un objeto se active con un clic o un toque (para usar el juego sin teclado). */
 export function clicable<T extends Phaser.GameObjects.Text | Phaser.GameObjects.Zone>(objeto: T, accion: () => void): T {

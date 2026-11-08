@@ -129,7 +129,7 @@ export class CalibrationScene extends Phaser.Scene {
       return;
     }
     const input = getInput(this);
-    input.aplicarAjustes(input.modo === 'pose' ? { zonaPose: zona } : { zonaManos: zona });
+    input.aplicarAjustes(input.modo === 'pose' ? { zonaPose: zona } : input.modo === 'kinect' ? { zonaKinect: zona } : { zonaManos: zona });
     this.instruccion.setText('¡Listo! Zona guardada.');
     this.g.clear();
     this.time.delayedCall(1500, () => this.scene.start(ESCENAS.ajustes));

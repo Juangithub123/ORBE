@@ -2,6 +2,7 @@ import { CONFIG } from '../config';
 import type { ModoEntrada } from '../input/PlayerInput';
 import type { Resolucion } from '../pantalla';
 import type { Perfil } from '../perfil';
+import type { PuntoKinect } from '../input/kinect';
 
 // Ajustes del dispositivo, guardados en localStorage.
 // Si localStorage falla (modo privado, permisos), se usan los valores por defecto.
@@ -26,6 +27,10 @@ export interface Ajustes {
   espejar: boolean;
   zonaManos: Zona;
   zonaPose: Zona;
+  /** Kinect: punto de cada jugador, zona de juego y servidor de TouchDesigner ('' = esta computadora, puerto kinectPuerto). */
+  puntoKinect: PuntoKinect;
+  zonaKinect: Zona;
+  kinectServidor: string;
   camaraEnJuego: CamaraEnJuego;
   volumen: number;
   /** Resolución de dibujo (no cambia la lógica, que siempre es de 1280×720). */
@@ -46,6 +51,9 @@ export const AJUSTES_POR_DEFECTO: Ajustes = {
   espejar: CONFIG.espejar,
   zonaManos: { x0: 0.1, x1: 0.9, y0: 0.1, y1: 0.9 },
   zonaPose: { x0: 0.15, x1: 0.85, y0: 0.3, y1: 0.7 },
+  puntoKinect: 'columna',
+  zonaKinect: { x0: 0.15, x1: 0.85, y0: 0.3, y1: 0.7 },
+  kinectServidor: '',
   camaraEnJuego: 'superpuesta',
   volumen: CONFIG.volumenGeneral,
   resolucion: 'auto',

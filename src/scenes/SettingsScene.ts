@@ -7,12 +7,12 @@ import { borrarRanking } from '../storage/leaderboard';
 import { HoldButton } from '../ui/HoldButton';
 import { ESTILOS } from '../ui/text';
 import { RESOLUCIONES, cambiarResolucion, estaEnPantallaCompleta, nombreResolucion, ponerPantallaCompleta } from '../pantalla';
-import { ESCENAS, NOMBRE_CAMARA, NOMBRE_MODO, clicable, getInput, mostrarCamara, siguienteCamara, siguienteVolumen } from './shared';
+import { ESCENAS, NOMBRE_CAMARA, NOMBRE_MODO, NOMBRE_PUNTO_KINECT, PUNTOS_KINECT, conSensor, clicable, getInput, mostrarCamara, siguienteCamara, siguienteVolumen } from './shared';
 
 // Ajustes del dispositivo (se guardan en localStorage).
 // Cada botón se activa manteniendo el orbe encima, con un clic o toque, o con su número en el teclado.
 
-const MODOS: ModoEntrada[] = ['pose', 'manos', 'teclado'];
+const MODOS: ModoEntrada[] = ['pose', 'manos', 'kinect', 'teclado'];
 /** Tiempo para la segunda confirmación de "Restablecer ranking". */
 const CONFIRMAR_MS = 5000;
 /** Cuánto se muestra un aviso (por ejemplo, si el navegador no deja pasar a pantalla completa). */
@@ -68,7 +68,7 @@ export class SettingsScene extends Phaser.Scene {
     };
     this.bEntrada = crear(0, 0, () => this.cambiarModo());
     this.bWebcam = crear(0, 1, () => this.cambiarWebcam());
-    this.bPunto = crear(0, 2, () => input.aplicarAjustes({ puntoPose: input.config.puntoPose === 'torso' ? 'muneca' : 'torso' }));
+    this.bPunto = crear(0, 2, () => this.cambiarPunto());
     this.bEspejar = crear(0, 3, () => input.aplicarAjustes({ espejar: !input.config.espejar }));
     this.bCalibrar = crear(0, 4, () => this.scene.start(ESCENAS.calibracion));
     this.bCamara = crear(0, 5, () => input.aplicarAjustes({ camaraEnJuego: siguienteCamara(input.config.camaraEnJuego) }));
@@ -124,15 +124,19 @@ export class SettingsScene extends Phaser.Scene {
   update(time: number, delta: number) {
     const input = getInput(this);
     const a = input.config;
-    const camara = input.modo === 'pose' || input.modo === 'manos';
+    const camara = conSensor(input.modo);
 
     const sinCamara = input.estado === 'error' && a.modoEntrada !== 'teclado';
-    this.bEntrada.setTexto(`Entrada: ${NOMBRE_MODO[a.modoEntrada]}${sinCamara ? ' · sin cámara' : ''}  [1]`);
+    this.bEntrada.setTexto(`Entrada: ${NOMBRE_MODO[a.modoEntrada]}${sinCamara ? (a.modoEntrada === 'kinect' ? ' · sin conexión' : ' · sin cámara') : ''}  [1]`);
     this.bWebcam.setTexto(`Webcam: ${a.camaraId ? a.camaraNombre || 'elegida' : 'la predeterminada'}  [C]`);
-    this.bPunto.setTexto(`Punto de Pose: ${a.puntoPose === 'torso' ? 'centro del torso' : 'muñeca más alta'}  [2]`);
-    this.bPunto.habilitado = a.modoEntrada === 'pose';
+    this.bPunto.setTexto(
+      a.modoEntrada === 'kinect'
+        ? `Punto del Kinect: ${NOMBRE_PUNTO_KINECT[a.puntoKinect]}  [2]`
+        : `Punto de Pose: ${a.puntoPose === 'torso' ? 'centro del torso' : 'muñeca más alta'}  [2]`,
+    );
+    this.bPunto.habilitado = a.modoEntrada === 'pose' || a.modoEntrada === 'kinect';
     this.bEspejar.setTexto(`Espejar cámara: ${a.espejar ? 'sí' : 'no'}  [3]`);
-    this.bCalibrar.setTexto(camara ? 'Calibrar zona de juego  [4]' : 'Calibrar zona (necesita cámara)');
+    this.bCalibrar.setTexto(camara ? 'Calibrar zona de juego  [4]' : 'Calibrar zona (necesita cámara o Kinect)');
     this.bCalibrar.habilitado = camara && input.estado === 'lista';
     this.bCamara.setTexto(`Cámara en el juego: ${NOMBRE_CAMARA[a.camaraEnJuego]}  [5]`);
     this.bResolucion.setTexto(`Resolución: ${nombreResolucion(a.resolucion)}  [6]`);
@@ -163,6 +167,18 @@ export class SettingsScene extends Phaser.Scene {
     const input = getInput(this);
     if (input.estado !== 'error' || input.config.modoEntrada === 'teclado') return;
     input.start().then(() => mostrarCamara(this, true));
+  }
+
+  /** Punto de cada jugador: en Pose, torso o muñeca; en Kinect, recorre las articulaciones. */
+  private cambiarPunto() {
+    const input = getInput(this);
+    const a = input.config;
+    if (a.modoEntrada === 'kinect') {
+      const i = PUNTOS_KINECT.indexOf(a.puntoKinect);
+      input.aplicarAjustes({ puntoKinect: PUNTOS_KINECT[(i + 1) % PUNTOS_KINECT.length] });
+    } else {
+      input.aplicarAjustes({ puntoPose: a.puntoPose === 'torso' ? 'muneca' : 'torso' });
+    }
   }
 
   /** Lista las cámaras conectadas (los nombres aparecen después de dar permiso de cámara). */
@@ -229,6 +245,7 @@ export class SettingsScene extends Phaser.Scene {
         return `${input.error}\nMientras, se usa el teclado · Clic acá o [R] para reintentar`;
       case 'lista':
         if (input.modo === 'teclado') return 'Teclado: WASD mueve a P1, flechas a P2 · P simula que falta un jugador';
+        if (input.modo === 'kinect') return `Kinect conectado (TouchDesigner) · personas detectadas: ${input.countCrudo}`;
         return `Cámara lista · ${input.modo === 'pose' ? 'personas' : 'manos'} detectadas: ${input.countCrudo}`;
       default:
         return '';
