@@ -3,7 +3,7 @@ import { CONFIG } from '../config';
 import { OrbView } from '../game/OrbView';
 import { HoldButton } from '../ui/HoldButton';
 import { ESTILOS } from '../ui/text';
-import { ESCENAS, NOMBRE_CAMARA, getInput, mostrarCamaraJuego, siguienteCamara, siguienteVolumen } from './shared';
+import { ESCENAS, NOMBRE_CAMARA, conSensor, getInput, mostrarCamaraJuego, siguienteCamara, siguienteVolumen } from './shared';
 
 // Pausa a pedido (Esc durante el juego): se dibuja encima del nivel, que queda congelado.
 // Los botones se activan con el orbe, con un clic o con su tecla. Esc (lo maneja GameScene) sigue jugando.
@@ -58,9 +58,9 @@ export class PauseMenuScene extends Phaser.Scene {
   update(_t: number, delta: number) {
     const input = getInput(this);
     this.bVolumen.setTexto(`Volumen: ${Math.round(input.config.volumen * 100)} %  [V]`);
-    const conCamara = input.modo === 'manos' || input.modo === 'pose';
+    const conCamara = conSensor(input.modo);
     this.bCamara.habilitado = conCamara;
-    this.bCamara.setTexto(conCamara ? `Cámara: ${NOMBRE_CAMARA[input.config.camaraEnJuego]}  [C]` : 'Cámara: (solo con Manos o Pose)');
+    this.bCamara.setTexto(conCamara ? `Cámara: ${NOMBRE_CAMARA[input.config.camaraEnJuego]}  [C]` : 'Cámara: (solo con Manos, Pose o Kinect)');
     for (const b of this.botones) b.update(input, delta);
     this.orbe.update(delta);
   }

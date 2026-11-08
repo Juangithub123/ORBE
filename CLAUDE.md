@@ -24,6 +24,7 @@ Para la versión de escritorio: `npm run escritorio` (abre la app) y `npm run di
 - Modo teclado: WASD mueve a P1 y las flechas a P2; P simula que falta un jugador.
 - `?entrada=teclado`, `?nivel=2`, `?perfil=liviano` en la URL (ver README).
 - En desarrollo (`npm run dev`), `window.orbe` es el juego y `window.orbeAudio` el motor de audio, para inspeccionar desde la consola.
+- Modo Kinect sin sensor: `npm run kinect:simular` (hace de TouchDesigner) y `?entrada=kinect`.
 - Playwright con `--use-fake-device-for-media-stream` da una cámara simulada (sin manos: para probar la detección se puede reemplazar `detectar` de la fuente).
 
 ## Publicar

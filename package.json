@@ -22,7 +22,8 @@
     "dist": "npm run build:electron && electron-builder --publish never",
     "dist:win": "npm run build:electron && electron-builder --win --publish never",
     "dist:mac": "npm run build:electron && electron-builder --mac --publish never",
-    "dist:linux": "npm run build:electron && electron-builder --linux --publish never"
+    "dist:linux": "npm run build:electron && electron-builder --linux --publish never",
+    "kinect:simular": "node scripts/simular-kinect.mjs"
   },
   "dependencies": {
     "electron-updater": "6.8.11"
@@ -36,6 +37,7 @@
     "tone": "15.1.22",
     "typescript": "5.9.3",
     "vite": "8.3.5",
-    "vitest": "5.0.5"
+    "vitest": "5.0.5",
+    "ws": "8.18.3"
   }
 }

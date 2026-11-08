@@ -75,7 +75,7 @@ export class CameraPreview {
       return;
     }
     const lugar = this.modo === 'superpuesta' ? this.alinearConJuego() : '';
-    const clave = `${this.modo}|${vista.video.currentTime}|${vista.t}|${lugar}|${this.ajustes.espejar}`;
+    const clave = `${this.modo}|${vista.video?.currentTime ?? 0}|${vista.t}|${lugar}|${this.ajustes.espejar}`;
     if (clave !== this.ultimoDibujo) {
       this.ultimoDibujo = clave;
       if (this.modo === 'miniatura') this.dibujarMiniatura(vista);
@@ -95,7 +95,8 @@ export class CameraPreview {
       ctx.scale(-1, 1);
     }
     ctx.globalAlpha = 0.85;
-    ctx.drawImage(vista.video, 0, 0, ANCHO_MINI, ALTO_MINI);
+    // Con el Kinect no hay imagen: solo el esqueleto sobre fondo negro.
+    if (vista.video) ctx.drawImage(vista.video, 0, 0, ANCHO_MINI, ALTO_MINI);
     ctx.restore();
     const aPantalla = (p: NormPos) => ({ x: (espejar ? 1 - p.x : p.x) * ANCHO_MINI, y: p.y * ALTO_MINI });
     dibujarDeteccion(ctx, vista, aPantalla, 1.5, 7);
@@ -125,12 +126,13 @@ export class CameraPreview {
     ctx.clearRect(0, 0, lienzoAncho, lienzoAlto);
     ctx.save();
     ctx.globalAlpha = Math.min(1, Math.max(0, CONFIG.opacidadCamara));
-    if (espejar) {
+    // Con el Kinect no hay imagen: solo se dibujan los esqueletos.
+    if (vista.video && espejar) {
       // La zona está en coordenadas ya espejadas: se dibuja la imagen dada vuelta en el mismo rectángulo.
       ctx.translate(x + ancho, y);
       ctx.scale(-1, 1);
       ctx.drawImage(vista.video, 0, 0, ancho, alto);
-    } else {
+    } else if (vista.video) {
       ctx.drawImage(vista.video, x, y, ancho, alto);
     }
     ctx.restore();
