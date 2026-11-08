@@ -5,6 +5,10 @@
 //
 // Modo kiosco (`--kiosco`, o un .exe portable con "kiosco" en el nombre): pantalla completa en el monitor o
 // proyector externo si hay, sin cursor, y el juego arranca solo. Se sale con Ctrl+Q.
+//
+// Ventana de control (F4 en el juego, el panel ⚙, o `--control` al abrir): una segunda ventana para el
+// operador, en la pantalla principal (no en la del proyector), con los parámetros, el nombre, la entrada y
+// la zona de juego. Habla con el juego directamente (BroadcastChannel, mismo origen app://orbe).
 
 const { app, BrowserWindow, Menu, ipcMain, powerSaveBlocker, protocol, screen, session, systemPreferences } = require('electron');
 const fs = require('node:fs');
@@ -14,6 +18,7 @@ const ESQUEMA = 'app';
 const ORIGEN = `${ESQUEMA}://orbe`;
 const DIST = path.join(__dirname, '..', 'dist');
 
+const abrirControlAlInicio = process.argv.includes('--control');
 const kiosco =
   process.argv.includes('--kiosco') ||
   /kiosco/i.test(path.basename(process.env.PORTABLE_EXECUTABLE_FILE ?? process.execPath));
@@ -34,7 +39,7 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    const ventana = BrowserWindow.getAllWindows()[0];
+    const ventana = ventanaJuego ?? BrowserWindow.getAllWindows()[0];
     if (!ventana) return;
     if (ventana.isMinimized()) ventana.restore();
     ventana.focus();
@@ -113,6 +118,33 @@ function configurarPermisos() {
 
 // --- Ventana -----------------------------------------------------------------------
 
+/** Ventana del juego y ventana de control (una sola de cada una). */
+let ventanaJuego = null;
+let ventanaControl = null;
+
+const PREFERENCIAS_WEB = {
+  preload: path.join(__dirname, 'preload.cjs'),
+  contextIsolation: true,
+  sandbox: true,
+  // El juego sigue (detección y música) aunque la ventana no tenga el foco.
+  backgroundThrottling: false,
+};
+
+/** Atajos que valen en las dos ventanas: Ctrl+Q sale, Ctrl+Shift+I abre las herramientas de desarrollo. */
+function atajosComunes(ventana) {
+  ventana.webContents.on('before-input-event', (evento, tecla) => {
+    if (tecla.type !== 'keyDown') return;
+    const ctrl = tecla.control || tecla.meta;
+    if (ctrl && tecla.key.toLowerCase() === 'q') {
+      evento.preventDefault();
+      app.quit();
+    } else if (ctrl && tecla.shift && tecla.key.toLowerCase() === 'i') {
+      evento.preventDefault();
+      ventana.webContents.toggleDevTools();
+    }
+  });
+}
+
 /** En el kiosco, la pantalla externa (monitor o proyector) si hay; si no, la principal. `--pantalla=N` elige a mano. */
 function pantallaDelKiosco() {
   const pantallas = screen.getAllDisplays();
@@ -142,30 +174,29 @@ function crearVentana() {
     fullscreen: kiosco || preferencias.pantallaCompleta,
     kiosk: kiosco,
     autoHideMenuBar: true,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.cjs'),
-      contextIsolation: true,
-      sandbox: true,
-      // El juego sigue (detección y música) aunque la ventana no tenga el foco.
-      backgroundThrottling: false,
-    },
+    webPreferences: PREFERENCIAS_WEB,
   });
+  ventanaJuego = ventana;
 
   ventana.once('ready-to-show', () => ventana.show());
+  // Cerrar el juego cierra todo (también la ventana de control).
+  ventana.on('closed', () => {
+    ventanaJuego = null;
+    app.quit();
+  });
+  atajosComunes(ventana);
+  // La ventana de control la abre el juego con window.open (F4 o el panel ⚙): se crea acá, en su pantalla.
+  ventana.webContents.setWindowOpenHandler(({ url }) => {
+    if (new URL(url).searchParams.has('control') && url.startsWith(`${ORIGEN}/`)) abrirVentanaControl();
+    return { action: 'deny' };
+  });
   const avisarPantalla = () => ventana.webContents.send('orbe:pantalla-completa', ventana.isFullScreen());
   ventana.on('enter-full-screen', avisarPantalla);
   ventana.on('leave-full-screen', avisarPantalla);
 
   ventana.webContents.on('before-input-event', (evento, tecla) => {
     if (tecla.type !== 'keyDown') return;
-    const ctrl = tecla.control || tecla.meta;
-    if (ctrl && tecla.key.toLowerCase() === 'q') {
-      evento.preventDefault();
-      app.quit();
-    } else if (ctrl && tecla.shift && tecla.key.toLowerCase() === 'i') {
-      evento.preventDefault();
-      ventana.webContents.toggleDevTools();
-    } else if (tecla.key === 'F11' && !kiosco) {
+    if (tecla.key === 'F11' && !kiosco) {
       evento.preventDefault();
       ponerPantallaCompleta(ventana, !ventana.isFullScreen());
     }
@@ -178,6 +209,43 @@ function crearVentana() {
 
   ventana.loadURL(`${ORIGEN}/index.html`);
   return ventana;
+}
+
+/** Pantalla para la ventana de control: la principal, salvo que ahí esté el juego en el kiosco y haya otra. */
+function pantallaDelControl() {
+  const principal = screen.getPrimaryDisplay();
+  if (!kiosco) return principal;
+  const delJuego = pantallaDelKiosco();
+  if (delJuego.id !== principal.id) return principal;
+  return screen.getAllDisplays().find((p) => p.id !== delJuego.id) ?? principal;
+}
+
+function abrirVentanaControl() {
+  if (ventanaControl) {
+    if (ventanaControl.isMinimized()) ventanaControl.restore();
+    ventanaControl.focus();
+    return;
+  }
+  const area = pantallaDelControl().workArea;
+  const ancho = Math.min(1200, area.width);
+  const alto = Math.min(860, area.height);
+  const ventana = new BrowserWindow({
+    title: 'ORBE · Control',
+    x: Math.round(area.x + (area.width - ancho) / 2),
+    y: Math.round(area.y + (area.height - alto) / 2),
+    width: ancho,
+    height: alto,
+    backgroundColor: '#0b0b0b',
+    autoHideMenuBar: true,
+    webPreferences: PREFERENCIAS_WEB,
+  });
+  ventanaControl = ventana;
+  ventana.on('closed', () => {
+    ventanaControl = null;
+  });
+  atajosComunes(ventana);
+  ventana.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  ventana.loadURL(`${ORIGEN}/index.html?control`);
 }
 
 function ponerPantallaCompleta(ventana, completa) {
@@ -240,5 +308,6 @@ async function iniciar() {
   // Se juega sin tocar el teclado ni el mouse: que la pantalla no se apague mientras el juego está abierto.
   powerSaveBlocker.start('prevent-display-sleep');
   crearVentana();
+  if (abrirControlAlInicio) abrirVentanaControl();
   buscarActualizacion();
 }

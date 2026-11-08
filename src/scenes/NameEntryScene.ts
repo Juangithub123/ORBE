@@ -9,6 +9,8 @@ import { HoldButton } from '../ui/HoldButton';
 import { ESTILOS } from '../ui/text';
 import { ESCENAS, clicable, getInput, mostrarCamara, setRun } from './shared';
 import { audio } from '../audio/AudioEngine';
+import { limpiarNombre } from '../control/protocolo';
+import type { NombreControl } from '../control/PuenteJuego';
 
 // Nombre del dúo (reglas en game/nombre.ts). Se elige en Ajustes cómo:
 // - "letras que caen": caen letras y los jugadores las atrapan con el orbe. Pueden ir frenando hasta quedarse
@@ -19,6 +21,8 @@ import { audio } from '../audio/AudioEngine';
 // Con el botón "Cambiar modo" (orbe, clic o Tab) se pasa de letras a teclado y al revés sin perder lo escrito.
 // ⌫ borra una letra, BORRAR borra todo y OK confirma; al llegar al máximo de letras también se confirma.
 // Si falta un jugador no se atrapa nada (el orbe quieto no "escribe" solo).
+// Desde la ventana de control el operador también puede escribir el nombre (se ve acá mientras lo escribe)
+// y confirmarlo; si lo escribió antes de llegar a esta pantalla, se usa al entrar.
 // Atajos: escribir con el teclado (solo con cámara: en modo teclado, WASD mueve el orbe), Backspace, Enter;
 // "Listo" con un clic (en una tablet); Esc vuelve al menú.
 
@@ -73,13 +77,15 @@ export class NameEntryScene extends Phaser.Scene {
   private proximaMs = 0;
   private pausaAtrapeHasta = 0;
   private confirmado = false;
+  /** Último nombre de la ventana de control ya aplicado. */
+  private versionControl = 0;
 
   constructor() {
     super(ESCENAS.nombre);
   }
 
-  /** `nombre`: lo escrito antes de cambiar de modo. */
-  create(datos?: { nombre?: string }) {
+  /** `nombre` y `versionControl`: lo escrito antes de cambiar de modo (no se vuelve a pisar con el del operador). */
+  create(datos?: { nombre?: string; versionControl?: number }) {
     mostrarCamara(this, false);
     const input = getInput(this);
     this.modo = input.config.modoNombre;
@@ -90,8 +96,10 @@ export class NameEntryScene extends Phaser.Scene {
     this.pausaAtrapeHasta = 0;
     this.confirmado = false;
 
+    const control = this.registry.get('nombreControl') as NombreControl | null | undefined;
     if (this.modo === 'sin') {
-      setRun(this, crearRun(NOMBRE_POR_DEFECTO));
+      setRun(this, crearRun(control?.nombre || NOMBRE_POR_DEFECTO));
+      this.registry.set('nombreControl', null);
       this.scene.start(ESCENAS.juego);
       return;
     }
@@ -128,10 +136,30 @@ export class NameEntryScene extends Phaser.Scene {
 
     this.input.keyboard!.on('keydown', (e: KeyboardEvent) => this.tecla(e));
     this.orbe = new OrbView(this, input);
+    this.versionControl = datos?.versionControl ?? 0;
+    this.aplicarControl();
+  }
+
+  /** Lo escrito en la pantalla (para la ventana de control). */
+  get nombreActual() {
+    return this.nombre;
+  }
+
+  /** Si el operador escribió (o confirmó) un nombre desde la ventana de control, se usa. */
+  private aplicarControl() {
+    const control = this.registry.get('nombreControl') as NombreControl | null | undefined;
+    if (!control || control.version === this.versionControl || this.confirmado) return;
+    this.versionControl = control.version;
+    this.nombre = limpiarNombre(control.nombre, CONFIG.nombreMaxLetras);
+    if (control.confirmar) {
+      if (this.nombre.length === 0) this.nombre = NOMBRE_POR_DEFECTO;
+      this.confirmar();
+    }
   }
 
   update(time: number, delta: number) {
     if (this.modo === 'sin') return;
+    this.aplicarControl();
     const input = getInput(this);
     this.orbe.update(delta);
     this.avisoFalta.setVisible(input.count < 2);
@@ -269,7 +297,7 @@ export class NameEntryScene extends Phaser.Scene {
   private cambiarModo() {
     if (this.confirmado) return;
     getInput(this).aplicarAjustes({ modoNombre: this.modo === 'caen' ? 'teclado' : 'caen' });
-    this.scene.restart({ nombre: this.nombre });
+    this.scene.restart({ nombre: this.nombre, versionControl: this.versionControl });
   }
 
   private tecla(e: KeyboardEvent) {
@@ -297,6 +325,8 @@ export class NameEntryScene extends Phaser.Scene {
   private confirmar() {
     if (this.nombre.length === 0 || this.confirmado) return;
     this.confirmado = true;
+    // Lo que escribió el operador ya se usó: el próximo dúo empieza de cero.
+    this.registry.set('nombreControl', null);
     this.texto.setText(this.nombre).setColor(CSS.meta);
     this.tweens.add({ targets: this.texto, scale: { from: 1.25, to: 1 }, duration: 300, ease: 'Back.easeOut' });
     setRun(this, crearRun(this.nombre));
