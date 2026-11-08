@@ -99,6 +99,18 @@ export const CONFIG = {
   letrasCadaMs: 600,
   /** Velocidad de caída de las letras (px/s). */
   letrasVelocidad: 160,
+  /** Cuántas veces más seguido cae cada vocal que cada consonante (1 = todas igual). */
+  letrasPesoVocales: 1,
+  /** Cuánto frenan las letras al caer (px/s por segundo; 0 = caen siempre a la misma velocidad). */
+  letrasFrenado: 0,
+  /** Velocidad a la que llegan al frenar (px/s; 0 = se quedan quietas). */
+  letrasVelocidadMinima: 0,
+  /** Cuánto (ms) queda una letra quieta antes de desaparecer. */
+  letrasQuietasMs: 6000,
+  /** Máximo de letras en pantalla: si se llega, se va la más vieja de las quietas. */
+  letrasMaximas: 16,
+  /** Tiempo (ms) que hay que mantener el orbe sobre una tecla del teclado en pantalla. */
+  nombreTeclaMs: 900,
   /** Probabilidad de que cada objeto especial (⌫, BORRAR, OK) caiga en lugar de una letra. */
   probEspecial: 0.08,
   /** Pausa (ms) después de atrapar algo, para no atrapar dos cosas seguidas. */

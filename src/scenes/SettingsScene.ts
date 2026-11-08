@@ -7,7 +7,7 @@ import { borrarRanking } from '../storage/leaderboard';
 import { HoldButton } from '../ui/HoldButton';
 import { ESTILOS } from '../ui/text';
 import { RESOLUCIONES, cambiarResolucion, estaEnPantallaCompleta, nombreResolucion, ponerPantallaCompleta } from '../pantalla';
-import { ESCENAS, NOMBRE_CAMARA, NOMBRE_MODO, NOMBRE_PUNTO_KINECT, PUNTOS_KINECT, conSensor, clicable, getInput, mostrarCamara, siguienteCamara, siguienteVolumen } from './shared';
+import { ESCENAS, MODOS_NOMBRE, NOMBRE_CAMARA, NOMBRE_MODO, NOMBRE_MODO_NOMBRE, NOMBRE_PUNTO_KINECT, PUNTOS_KINECT, conSensor, clicable, getInput, mostrarCamara, siguienteCamara, siguienteVolumen } from './shared';
 
 // Ajustes del dispositivo (se guardan en localStorage).
 // Cada botón se activa manteniendo el orbe encima, con un clic o toque, o con su número en el teclado.
@@ -18,7 +18,7 @@ const CONFIRMAR_MS = 5000;
 /** Cuánto se muestra un aviso (por ejemplo, si el navegador no deja pasar a pantalla completa). */
 const AVISO_MS = 5000;
 
-// Dos columnas: a la izquierda la entrada (seis botones), a la derecha la pantalla y lo demás.
+// Dos columnas: a la izquierda la entrada (seis botones), a la derecha la pantalla, el nombre y lo demás.
 const ANCHO_BOTON = 540;
 const ALTO_BOTON = 60;
 const SEPARACION = 30;
@@ -41,6 +41,7 @@ export class SettingsScene extends Phaser.Scene {
   private bPantalla!: HoldButton;
   private bVolumen!: HoldButton;
   private bRanking!: HoldButton;
+  private bNombre!: HoldButton;
   private confirmarRankingHasta = 0;
   private rankingBorrado = false;
   private aviso = '';
@@ -76,6 +77,10 @@ export class SettingsScene extends Phaser.Scene {
     this.bPantalla = crear(1, 1, () => this.alternarPantalla());
     this.bVolumen = crear(1, 2, () => input.aplicarAjustes({ volumen: siguienteVolumen(input.config.volumen) }));
     this.bRanking = crear(1, 3, () => this.restablecerRanking());
+    this.bNombre = crear(1, 4, () => {
+      const i = MODOS_NOMBRE.indexOf(input.config.modoNombre);
+      input.aplicarAjustes({ modoNombre: MODOS_NOMBRE[(i + 1) % MODOS_NOMBRE.length] });
+    });
     const bVolver = crear(1, 5, () => this.scene.start(ESCENAS.menu));
 
     void this.actualizarCamaras();
@@ -104,6 +109,7 @@ export class SettingsScene extends Phaser.Scene {
       ['SEVEN', this.bPantalla],
       ['EIGHT', this.bVolumen],
       ['NINE', this.bRanking],
+      ['ZERO', this.bNombre],
       ['ESC', bVolver],
     ];
     for (const [tecla, boton] of atajos) kb.on(`keydown-${tecla}`, () => boton.activar());
@@ -141,6 +147,7 @@ export class SettingsScene extends Phaser.Scene {
     this.bCamara.setTexto(`Cámara en el juego: ${NOMBRE_CAMARA[a.camaraEnJuego]}  [5]`);
     this.bResolucion.setTexto(`Resolución: ${nombreResolucion(a.resolucion)}  [6]`);
     this.bPantalla.setTexto(`Pantalla: ${estaEnPantallaCompleta(this.game) ? 'completa' : 'ventana'}  [7]`);
+    this.bNombre.setTexto(`Nombre del dúo: ${NOMBRE_MODO_NOMBRE[a.modoNombre] ?? NOMBRE_MODO_NOMBRE.caen}  [0]`);
     this.bVolumen.setTexto(`Volumen: ${Math.round(a.volumen * 100)} %  [8]`);
     this.bRanking.setTexto(
       this.rankingBorrado

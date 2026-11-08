@@ -41,7 +41,10 @@ Probado con cámara simulada en navegadores sin GPU (Playwright). **Falta probar
 
 1. **Inicio:** se elige el modo (liviano para celulares y tablets, completo para computadoras). Ese toque también habilita audio, cámara y pantalla completa.
 2. **Menú:** Jugar, Ranking, Ajustes. Los botones se activan **manteniendo el orbe encima** 1,5 s (o con un clic, o con su tecla).
-3. **Nombre del dúo:** caen letras; se atrapan tocándolas con el orbe. ⌫ borra una, BORRAR borra todo, OK confirma.
+3. **Nombre del dúo** (Ajustes → *Nombre del dúo* [0], o el botón *Cambiar modo* / Tab en esa pantalla):
+   - *letras que caen*: se atrapan tocándolas con el orbe. ⌫ borra una, BORRAR borra todo, OK confirma. En el panel ⚙: `letrasPesoVocales` (vocales más seguido), `letrasFrenado` y `letrasVelocidadMinima` (frenan hasta quedarse quietas mientras caen nuevas), `letrasQuietasMs` y `letrasMaximas`;
+   - *teclado en pantalla*: el abecedario quieto, cada tecla se activa manteniendo el orbe encima (`nombreTeclaMs`);
+   - *sin nombre*: se juega directo como DUO (para la instalación).
 4. **Nivel:** el nivel sube solo y cada vez más rápido. Tocar una roca resta una vida (10 por partida, no se recargan). Las rocas naranjas (frágiles) se rompen con el orbe grande. Las monedas suman 10 puntos. Al cruzar la franja verde se pasa al nivel siguiente.
 5. **Si falta un jugador**, el juego se pausa solo y sigue con cuenta regresiva cuando vuelven los dos. **Esc** abre la pausa a pedido.
 6. **Resultado:** ¡GANARON! o GAME OVER. La partida entra al ranking si está en el top 10. Acercarse entre sí reinicia con el mismo dúo.

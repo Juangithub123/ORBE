@@ -3,6 +3,7 @@ import type { ModoEntrada } from '../input/PlayerInput';
 import type { Resolucion } from '../pantalla';
 import type { Perfil } from '../perfil';
 import type { PuntoKinect } from '../input/kinect';
+import type { ModoNombre } from '../game/nombre';
 
 // Ajustes del dispositivo, guardados en localStorage.
 // Si localStorage falla (modo privado, permisos), se usan los valores por defecto.
@@ -32,6 +33,8 @@ export interface Ajustes {
   zonaKinect: Zona;
   kinectServidor: string;
   camaraEnJuego: CamaraEnJuego;
+  /** Cómo se elige el nombre del dúo: letras que caen, teclado en pantalla o sin nombre. */
+  modoNombre: ModoNombre;
   volumen: number;
   /** Resolución de dibujo (no cambia la lógica, que siempre es de 1280×720). */
   resolucion: Resolucion;
@@ -55,6 +58,7 @@ export const AJUSTES_POR_DEFECTO: Ajustes = {
   zonaKinect: { x0: 0.15, x1: 0.85, y0: 0.3, y1: 0.7 },
   kinectServidor: '',
   camaraEnJuego: 'superpuesta',
+  modoNombre: 'caen',
   volumen: CONFIG.volumenGeneral,
   resolucion: 'auto',
   pantallaCompleta: false,

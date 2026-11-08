@@ -4,6 +4,7 @@ import type { ModoEntrada } from '../input/PlayerInput';
 import type { PuntoKinect } from '../input/kinect';
 import type { CamaraEnJuego } from '../storage/settings';
 import type { RunState } from '../game/RunState';
+import type { ModoNombre } from '../game/nombre';
 import { parseTiled, type TiledMap } from '../level/parseTiled';
 import type { LevelData } from '../level/types';
 
@@ -43,6 +44,14 @@ export const NOMBRE_PUNTO_KINECT: Record<PuntoKinect, string> = {
   mano: 'mano más alta',
 };
 export const PUNTOS_KINECT = Object.keys(NOMBRE_PUNTO_KINECT) as PuntoKinect[];
+
+/** Nombres de las formas de elegir el nombre del dúo (en el orden en que se recorren en Ajustes). */
+export const NOMBRE_MODO_NOMBRE: Record<ModoNombre, string> = {
+  caen: 'letras que caen',
+  teclado: 'teclado en pantalla',
+  sin: 'sin nombre (DUO)',
+};
+export const MODOS_NOMBRE = Object.keys(NOMBRE_MODO_NOMBRE) as ModoNombre[];
 
 /** Hace que un objeto se active con un clic o un toque (para usar el juego sin teclado). */
 export function clicable<T extends Phaser.GameObjects.Text | Phaser.GameObjects.Zone>(objeto: T, accion: () => void): T {
