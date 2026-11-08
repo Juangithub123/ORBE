@@ -35,10 +35,12 @@ export class HoldButton {
     private alto: number,
     etiqueta: string,
     private alActivar: () => void,
+    /** Tiempo para activarlo (por defecto, holdMs) y tamaño del texto (por ejemplo, para las teclas del nombre). */
+    private opciones: { holdMs?: number; tamano?: string } = {},
   ) {
     this.g = scene.add.graphics().setDepth(5);
     this.texto = scene.add
-      .text(x, y, etiqueta, { ...ESTILOS.boton, fontSize: '26px', align: 'center' })
+      .text(x, y, etiqueta, { ...ESTILOS.boton, fontSize: this.opciones.tamano ?? '26px', align: 'center' })
       .setOrigin(0.5)
       .setDepth(6);
     this.zona = scene.add
@@ -64,7 +66,7 @@ export class HoldButton {
     const adentro = this.contiene(orb.x, orb.y) && input.count === 2;
     if (!adentro) this.bloqueado = false;
 
-    const paso = deltaMs / CONFIG.holdMs;
+    const paso = deltaMs / (this.opciones.holdMs ?? CONFIG.holdMs);
     const llenando = adentro && !this.bloqueado && this.habilitado;
     this.progreso = Phaser.Math.Clamp(this.progreso + (llenando ? paso : -paso * VACIADO), 0, 1);
     if (this.progreso >= 1) {

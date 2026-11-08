@@ -12,11 +12,14 @@ import {
 } from '../storage/parametros';
 import { FUENTE } from './text';
 import { escritorio } from '../escritorio';
+import { abrirVentanaControl } from '../control/abrir';
 
 // Panel para ajustar a mano los parámetros de config.ts mientras se juega.
 // Se abre con el botón ⚙ (arriba a la derecha) o con F2. Los cambios se aplican al instante
 // y se guardan en este navegador. "Copiar cambios" da el JSON para pasarlo a config.ts.
 // Es HTML encima del juego (dentro de #app, así también se ve en pantalla completa).
+// "Otra ventana" (o F4) abre la ventana de control, donde este mismo panel va incrustado (`incrustado`):
+// ahí no guarda nada, avisa cada cambio (`alCambiar`) para que lo aplique el juego.
 
 const ESTILO = `
 .orbe-engranaje { position: fixed; top: 10px; right: 10px; z-index: 20; width: 38px; height: 38px;
@@ -45,9 +48,18 @@ const ESTILO = `
   border: 1px solid rgba(255,255,255,.35); border-radius: 4px; padding: 3px 5px; }
 .orbe-panel .volver { padding: 2px 7px; visibility: hidden; }
 .orbe-panel .fila.cambiado .volver { visibility: visible; }
+.orbe-panel.incrustado { position: static; width: auto; max-width: none; height: auto; overflow: visible;
+  padding: 0; background: none; border: 0; }
 .orbe-panel textarea { width: 100%; box-sizing: border-box; margin-top: 8px; font: 12px monospace; color: #fff;
   background: #111; border: 1px solid rgba(255,255,255,.35); }
 `;
+
+export interface OpcionesPanel {
+  /** Dentro de otra página (la ventana de control): siempre visible, sin engranaje ni F2, y sin guardar. */
+  incrustado?: boolean;
+  alCambiar?: (clave: ClaveParametro, valor: ValorParametro) => void;
+  alRestablecer?: () => void;
+}
 
 interface Fila {
   clave: ClaveParametro;
@@ -60,7 +72,11 @@ export class PanelParametros {
   private filas: Fila[] = [];
   private salida: HTMLTextAreaElement;
 
-  constructor(contenedor: HTMLElement) {
+  constructor(
+    contenedor: HTMLElement,
+    private opciones: OpcionesPanel = {},
+  ) {
+    const incrustado = Boolean(opciones.incrustado);
     const estilo = document.createElement('style');
     estilo.textContent = ESTILO;
     document.head.appendChild(estilo);
@@ -71,22 +87,27 @@ export class PanelParametros {
     engranaje.textContent = '⚙';
     engranaje.addEventListener('click', () => this.alternar());
     // En el kiosco no se muestra (F2 sigue funcionando).
-    if (!escritorio?.kiosco) contenedor.appendChild(engranaje);
+    if (!escritorio?.kiosco && !incrustado) contenedor.appendChild(engranaje);
 
     this.panel = document.createElement('div');
-    this.panel.className = 'orbe-panel';
-    this.panel.hidden = true;
+    this.panel.className = incrustado ? 'orbe-panel incrustado' : 'orbe-panel';
+    this.panel.hidden = !incrustado;
     this.panel.innerHTML = `
-      <div class="cabecera"><h2>Parámetros</h2><button data-accion="cerrar" title="Cerrar [F2]">✕</button></div>
+      <div class="cabecera"><h2>Parámetros</h2>${incrustado ? '' : '<button data-accion="cerrar" title="Cerrar [F2]">✕</button>'}</div>
       <p class="nota">Los cambios se aplican al instante y quedan guardados en este navegador.
         Algunos (como el brillo) se notan al empezar el próximo nivel.</p>
       <div class="acciones">
+        ${incrustado ? '' : '<button data-accion="ventana" title="Ventana de control [F4]">Abrir en otra ventana</button>'}
         <button data-accion="copiar">Copiar cambios</button>
         <button data-accion="restablecer">Restablecer todo</button>
       </div>
       <textarea rows="4" readonly hidden></textarea>`;
     this.salida = this.panel.querySelector('textarea')!;
-    this.panel.querySelector('[data-accion=cerrar]')!.addEventListener('click', () => this.alternar(false));
+    this.panel.querySelector('[data-accion=cerrar]')?.addEventListener('click', () => this.alternar(false));
+    this.panel.querySelector('[data-accion=ventana]')?.addEventListener('click', () => {
+      abrirVentanaControl();
+      this.alternar(false);
+    });
     this.panel.querySelector('[data-accion=copiar]')!.addEventListener('click', () => this.copiar());
     this.panel.querySelector('[data-accion=restablecer]')!.addEventListener('click', () => this.restablecer());
 
@@ -103,6 +124,7 @@ export class PanelParametros {
       this.panel.appendChild(fila.div);
     }
     contenedor.appendChild(this.panel);
+    if (incrustado) return;
 
     // Mientras se escribe en el panel, las teclas no llegan al juego (Phaser escucha en window).
     for (const tipo of ['keydown', 'keyup', 'keypress'] as const) {
@@ -128,6 +150,23 @@ export class PanelParametros {
     this.panel.hidden = !abrir;
     if (abrir) for (const f of this.filas) f.mostrar(CONFIG[f.clave]);
     else (document.activeElement as HTMLElement | null)?.blur();
+  }
+
+  /** Vuelve a mostrar los valores de CONFIG (cambiaron desde otra ventana). No toca la fila que se está editando. */
+  refrescar() {
+    for (const f of this.filas) {
+      f.div.classList.toggle('cambiado', CONFIG[f.clave] !== ORIGINALES[f.clave]);
+      if (!f.div.contains(document.activeElement)) f.mostrar(CONFIG[f.clave]);
+    }
+  }
+
+  /** Ventana de control: pone en CONFIG los parámetros que tiene el juego (`cambiosJuego`: los que difieren de config.ts). */
+  sincronizar(cambiosJuego: Record<string, ValorParametro>) {
+    for (const f of this.filas) {
+      const valor = f.clave in cambiosJuego ? cambiosJuego[f.clave] : ORIGINALES[f.clave];
+      if (typeof valor === typeof ORIGINALES[f.clave]) setParametro(f.clave, valor);
+    }
+    this.refrescar();
   }
 
   private crearFila(clave: ClaveParametro, descripcion: string): Fila {
@@ -194,7 +233,8 @@ export class PanelParametros {
 
   private cambiar(clave: ClaveParametro, valor: ValorParametro) {
     setParametro(clave, valor);
-    guardarParametros();
+    if (!this.opciones.incrustado) guardarParametros();
+    this.opciones.alCambiar?.(clave, valor);
     this.filas.find((f) => f.clave === clave)?.div.classList.toggle('cambiado', valor !== ORIGINALES[clave]);
   }
 
@@ -204,7 +244,8 @@ export class PanelParametros {
       f.mostrar(ORIGINALES[f.clave]);
       f.div.classList.remove('cambiado');
     }
-    guardarParametros();
+    if (!this.opciones.incrustado) guardarParametros();
+    this.opciones.alRestablecer?.();
     this.salida.hidden = true;
   }
 

@@ -69,6 +69,11 @@ export class InputManager {
     return this.modoActivo;
   }
 
+  /** Lo que detecta la cámara o el Kinect (imagen, puntos y jugadores), o null (teclado, sin cámara). */
+  get vista() {
+    return this.fuente?.vista ?? null;
+  }
+
   get config(): Readonly<Ajustes> {
     return this.ajustes;
   }
@@ -151,7 +156,7 @@ export class InputManager {
     return Promise.resolve({ ok: true, modo: this.ajustes.modoEntrada });
   }
 
-  /** Se llama una vez por frame (lo engancha main.ts al loop del juego). */
+  /** Se llama una vez por frame (lo engancha juego.ts al loop del juego). */
   update(deltaMs: number) {
     if (!this.fuente || this.estado === 'cargando') return;
     const { players, t } = this.fuente.read();

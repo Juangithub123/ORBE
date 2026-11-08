@@ -24,7 +24,7 @@ Las seis fases del plan original están hechas, más varias mejoras pedidas desp
 
 Agregados después:
 
-- Panel de parámetros en vivo (⚙ o F2), selector de modo **liviano / completo** al inicio, medidor de rendimiento (F3).
+- Panel de parámetros en vivo (⚙ o F2) y **ventana de control** para el operador (F4: parámetros, nombre, entrada y zona de juego en otra ventana), selector de modo **liviano / completo** al inicio, medidor de rendimiento (F3).
 - Resolución de dibujo (más nítido sin cambiar la lógica de 1280×720), pantalla completa o ventana.
 - Carga de la cámara por etapas con barras, MB y velocidad; mensajes claros si falta el permiso.
 - Cámara y esqueleto de MediaPipe **sobre el juego** (o miniatura), elegible en la pausa.
@@ -41,7 +41,10 @@ Probado con cámara simulada en navegadores sin GPU (Playwright). **Falta probar
 
 1. **Inicio:** se elige el modo (liviano para celulares y tablets, completo para computadoras). Ese toque también habilita audio, cámara y pantalla completa.
 2. **Menú:** Jugar, Ranking, Ajustes. Los botones se activan **manteniendo el orbe encima** 1,5 s (o con un clic, o con su tecla).
-3. **Nombre del dúo:** caen letras; se atrapan tocándolas con el orbe. ⌫ borra una, BORRAR borra todo, OK confirma.
+3. **Nombre del dúo** (Ajustes → *Nombre del dúo* [0], o el botón *Cambiar modo* / Tab en esa pantalla):
+   - *letras que caen*: se atrapan tocándolas con el orbe. ⌫ borra una, BORRAR borra todo, OK confirma. En el panel ⚙: `letrasPesoVocales` (vocales más seguido), `letrasFrenado` y `letrasVelocidadMinima` (frenan hasta quedarse quietas mientras caen nuevas), `letrasQuietasMs` y `letrasMaximas`;
+   - *teclado en pantalla*: el abecedario quieto, cada tecla se activa manteniendo el orbe encima (`nombreTeclaMs`);
+   - *sin nombre*: se juega directo como DUO (para la instalación).
 4. **Nivel:** el nivel sube solo y cada vez más rápido. Tocar una roca resta una vida (10 por partida, no se recargan). Las rocas naranjas (frágiles) se rompen con el orbe grande. Las monedas suman 10 puntos. Al cruzar la franja verde se pasa al nivel siguiente.
 5. **Si falta un jugador**, el juego se pausa solo y sigue con cuenta regresiva cuando vuelven los dos. **Esc** abre la pausa a pedido.
 6. **Resultado:** ¡GANARON! o GAME OVER. La partida entra al ranking si está en el top 10. Acercarse entre sí reinicia con el mismo dúo.
@@ -114,6 +117,13 @@ Además, en los dos: máximo 60 cuadros por segundo (`fpsMax`), la pantalla no s
 
 ### Ajustes, parámetros y guardado
 
+- **Ventana de control** (F4, "Abrir en otra ventana" en el panel ⚙, o `--control` en escritorio): una segunda ventana para el operador, pensada para la instalación (el juego en el proyector, el control en la pantalla de la computadora). Sin tocar la ventana del juego:
+  - prender y apagar la detección (apagada = teclado), elegir la entrada, el punto de cada jugador, espejar y cómo se ve el trackeo sobre el juego;
+  - **zona de juego**: se arrastra el rectángulo (o sus bordes y esquinas) sobre la imagen de la cámara con los esqueletos, y se aplica al instante;
+  - **nombre del dúo**: lo que se escribe aparece en la pantalla del nombre; "Confirmar y jugar" arranca con ese nombre (si el juego todavía no llegó a esa pantalla, se usa al llegar);
+  - volumen y todos los parámetros del panel ⚙.
+
+  Es la misma página con `?control` (no carga el juego) y habla con él por un `BroadcastChannel` (`src/control/`). En la web se abre como ventana emergente (el navegador puede pedir permiso); en escritorio, Electron la abre en la pantalla principal y no en la del kiosco.
 - **`src/config.ts`** es el panel de control: todos los números ajustables, con su explicación. El **panel ⚙** (o F2) los muestra y los cambia en vivo; los cambios quedan en el navegador y "Copiar cambios" da el JSON para pasarlos a `config.ts`.
 - **Ajustes** (pantalla del juego): entrada, webcam, punto de pose, espejar, calibrar, cámara en el juego, resolución, pantalla, volumen, ranking.
 - **Guardado** en `localStorage`: `orbe.ajustes`, `orbe.parametros`, `orbe.leaderboard`. En escritorio, además, `escritorio.json` en la carpeta de datos de la app (pantalla completa o ventana).
@@ -124,7 +134,9 @@ Además, en los dos: máximo 60 cuadros por segundo (`fpsMax`), la pantalla no s
 
 ```
 src/
-  main.ts              Crea el juego (Phaser), el panel de parámetros y el medidor
+  main.ts              Arranca el juego, o la ventana de control si la dirección tiene ?control
+  juego.ts             Crea el juego (Phaser), el panel de parámetros y el medidor
+  control/             Ventana de control para el operador (protocolo, puente con el juego, interfaz)
   config.ts            Panel de control: todos los parámetros
   perfil.ts            Modo liviano / completo
   pantalla.ts          Resolución, pantalla completa, Wake Lock, orientación
@@ -173,7 +185,7 @@ npm run dist:linux         # AppImage (en Linux)
 
 **Parámetros en la URL** (web): `?entrada=pose|manos|kinect|teclado`, `?kinect=servidor:puerto`, `?perfil=liviano|completo`, `?nivel=N` (arranca en ese nivel con un dúo de prueba que no entra al ranking).
 
-**Atajos de teclado:** F2 panel de parámetros · F3 medidor de rendimiento · Esc pausa / volver · en el juego, F1 depuración, N pasar de nivel, G invulnerable, 1 reiniciar · en modo teclado, P simula que falta un jugador · en escritorio, F11 pantalla completa, Ctrl+Q salir, Ctrl+Shift+I herramientas de desarrollo.
+**Atajos de teclado:** F2 panel de parámetros · F4 ventana de control · F3 medidor de rendimiento · Esc pausa / volver · en el juego, F1 depuración, N pasar de nivel, G invulnerable, 1 reiniciar · en modo teclado, P simula que falta un jugador · en escritorio, F11 pantalla completa, Ctrl+Q salir, Ctrl+Shift+I herramientas de desarrollo.
 
 ---
 
@@ -189,7 +201,7 @@ El juego compilado con `vite build --mode electron` (rutas relativas) se sirve d
 - fuerza la **GPU dedicada** (notebooks con dos GPU) e ignora la lista de bloqueo de GPU de Chromium;
 - una sola ventana; Ctrl+Q sale; F11 alterna pantalla completa y se recuerda;
 - la pantalla no se apaga mientras el juego está abierto;
-- **modo kiosco** (`--kiosco`, o un portable con "kiosco" en el nombre): pantalla completa en el **monitor o proyector externo** si hay (`--pantalla=N` elige otro), sin cursor, sin el engranaje del panel, arranca solo con el modo marcado. El instalador de Windows crea un acceso directo aparte, "ORBE (kiosco)".
+- **modo kiosco** (`--kiosco`, o un portable con "kiosco" en el nombre): pantalla completa en el **monitor o proyector externo** si hay (`--pantalla=N` elige otro), sin cursor, sin el engranaje del panel, arranca solo con el modo marcado. El instalador de Windows crea un acceso directo aparte, "ORBE (kiosco)". Con `--control` abre también la ventana de control (en la pantalla principal, si el kiosco está en otra).
 - **actualización automática** al abrir (instalador de Windows y AppImage de Linux): baja la versión nueva de GitHub Releases y la instala al cerrar.
 
 ### Publicar una versión
