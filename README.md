@@ -111,9 +111,14 @@ Todo se sintetiza en vivo con **Tone.js** (no hay archivos de audio). `musica.ts
 | Detecciones por segundo | 20 | una por imagen (≈30) |
 | Modelo de pose | lite | full |
 | Cámara sobre el juego | 480×270 | 960×540 |
-| Reverbs | cortas | largas |
+| Audio: frecuencia de muestreo | 32 kHz | la de la placa (44,1/48 kHz) |
+| Reverbs | una sola, de 2 s | dos, largas |
+| Drone de la música | sierra filtrada | FM |
+| Búfer de audio | grande (`playback`): no se corta si la CPU está ocupada | chico (`interactive`) |
 
-Además, en los dos: máximo 60 cuadros por segundo (`fpsMax`), la pantalla no se apaga (Wake Lock) y la vista de la cámara se redibuja solo con imágenes nuevas. La lógica siempre trabaja en 1280×720: con más resolución, la cámara de Phaser hace zoom (`pantalla.ts`).
+Además, en los dos: máximo 60 cuadros por segundo (`fpsMax`), la pantalla no se apaga (Wake Lock), la vista de la cámara se redibuja solo con imágenes nuevas y en el nivel solo se dibujan las rocas y monedas que están en pantalla. La lógica siempre trabaja en 1280×720: con más resolución, la cámara de Phaser hace zoom (`pantalla.ts`).
+
+**Dónde se va la CPU** (medido en la PC de la instalación, AMD A8-9600 de 4 hilos + GTX 1060, con TouchDesigner y el Kinect andando): el audio es lo más caro del juego, porque Tone.js calcula todo en vivo y cada señal y envolvente es un nodo que corre siempre, suene o no. En el modo completo el audio usaba ~80% de un núcleo (el drone FM ~25%, las dos reverbs ~17%, y ~26% el costo fijo de Tone.js); en el liviano, ~36%. El dibujo usa ~30% y TouchDesigner, 1,3 a 1,9 núcleos (ver [`kinect/README.md`](kinect/README.md), sección 4).
 
 ### Ajustes, parámetros y guardado
 
@@ -236,7 +241,7 @@ En cada push a una rama que no sea `main`, el mismo workflow arma los tres siste
 - Más niveles y balance (velocidades, vidas, frecuencia de letras en el nombre).
 - Firma de código (Windows y macOS) si se distribuye a más gente.
 - Elegir la pantalla del kiosco desde Ajustes (hoy: la externa automática o `--pantalla=N`).
-- Probar el modo Kinect con el sensor y TouchDesigner reales (está probado con el simulador). Alternativa futura: [Kinect-Remold](https://github.com/Spidoug/Kinect-Remold) (runtime nuevo con WebSocket propio; hoy sigue a una sola persona por defecto).
+- Modo Kinect: probado con el sensor y TouchDesigner reales (los nombres de las articulaciones del Kinect CHOP están en `kinect.ts`, `ARTICULACIONES_TD`). Falta jugarlo de punta a punta con dos personas paradas y calibrar la zona en el lugar. Alternativa futura: [Kinect-Remold](https://github.com/Spidoug/Kinect-Remold) (runtime nuevo con WebSocket propio; hoy sigue a una sola persona por defecto).
 
 ## Para seguir con Claude Code en una sesión local
 

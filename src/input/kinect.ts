@@ -4,7 +4,8 @@ import type { NormPos } from './PlayerInput';
 // TouchDesigner manda por WebSocket todos los canales de su Kinect CHOP: {"canales": {"p1/spine:u": 0.51, ...}}
 // (ver kinect/README.md). Los nombres cambian según la versión y las opciones del CHOP, así que se aceptan
 // varias formas:
-//   - jugador y articulación: "p1/spine", "p1_spine", "p1:spine"…
+//   - jugador y articulación: "p1/spine", "p1_spine", "p1:spine"… Ojo: el Kinect CHOP de TouchDesigner
+//     nombra las articulaciones por hueso ("p1/spine2", "p1/clavicle_l"; ver ARTICULACIONES_TD);
 //   - posición: en la imagen de color (u, v o color_u, color_v), en la de profundidad (depth_u, depth_v) o en
 //     el mundo, en metros (tx, ty, tz), que se proyecta como lo hace la cámara del Kinect v1.
 // Todas las posiciones quedan normalizadas de 0 a 1, con y hacia abajo, como las de MediaPipe.
@@ -35,6 +36,37 @@ const ARTICULACIONES: Record<string, string[]> = {
   pieDer: ['foot_r', 'foot_right', 'footright'],
 };
 
+/**
+ * El Kinect CHOP de TouchDesigner (Kinect v1, SDK 1.8) nombra cada articulación por el hueso que termina en
+ * ella: "neck" es la cabeza (no el cuello), "spine2" el centro de los hombros, "clavicle_l" el hombro,
+ * "upperarm_l" el codo, "thigh_l" la rodilla… Son las 20 del SDK, en el mismo orden. Como "neck" choca con el
+ * nombre de otras versiones (donde sí es el cuello), esta tabla se usa solo si el mensaje trae nombres que
+ * únicamente existen en ella (ver NOMBRES_SOLO_TD).
+ */
+const ARTICULACIONES_TD: Record<string, string[]> = {
+  cadera: ['root'],
+  columna: ['spine1'],
+  hombros: ['spine2'],
+  cabeza: ['neck', 'head'],
+  hombroIzq: ['clavicle_l'],
+  codoIzq: ['upperarm_l'],
+  munecaIzq: ['forearm_l'],
+  manoIzq: ['hand_l'],
+  hombroDer: ['clavicle_r'],
+  codoDer: ['upperarm_r'],
+  munecaDer: ['forearm_r'],
+  manoDer: ['hand_r'],
+  caderaIzq: ['pelvis_l'],
+  rodillaIzq: ['thigh_l'],
+  tobilloIzq: ['shin_l'],
+  pieIzq: ['foot_l'],
+  caderaDer: ['pelvis_r'],
+  rodillaDer: ['thigh_r'],
+  tobilloDer: ['shin_r'],
+  pieDer: ['foot_r'],
+};
+const NOMBRES_SOLO_TD = new Set(['root', 'spine1', 'spine2', 'clavicle_l', 'clavicle_r', 'upperarm_l', 'upperarm_r', 'forearm_l', 'forearm_r', 'pelvis_l', 'pelvis_r', 'thigh_l', 'thigh_r', 'shin_l', 'shin_r']);
+
 /** Huesos para dibujar el esqueleto (pares de articulaciones). */
 export const HUESOS: [string, string][] = [
   ['cabeza', 'hombros'], ['hombros', 'columna'], ['columna', 'cadera'],
@@ -50,8 +82,16 @@ export interface Cuerpo {
   articulaciones: Record<string, NormPos>;
 }
 
-const POR_NOMBRE = new Map<string, string>();
-for (const [propio, nombres] of Object.entries(ARTICULACIONES)) for (const n of nombres) POR_NOMBRE.set(n, propio);
+const porNombre = (tabla: Record<string, string[]>) => {
+  const mapa = new Map<string, string>();
+  for (const [propio, nombres] of Object.entries(tabla)) for (const n of nombres) mapa.set(n, propio);
+  return mapa;
+};
+const POR_NOMBRE = porNombre(ARTICULACIONES);
+const POR_NOMBRE_TD = porNombre(ARTICULACIONES_TD);
+
+/** Articulación "padre" de cada una (la más cercana al centro del cuerpo), según los huesos. */
+const PADRE = new Map(HUESOS.map(([padre, hija]) => [hija, padre]));
 
 /**
  * Campo de visión de la cámara de color del Kinect v1 (grados), para proyectar posiciones en metros
@@ -64,12 +104,19 @@ const FOV_V = 48.6;
 export function leerCuerpos(canales: Record<string, number>): Cuerpo[] {
   // jugador → articulación → atributo → valor
   const datos = new Map<string, Map<string, Record<string, number>>>();
+  const leidos: [string, string, string, number][] = [];
+  let nombresTd = false;
   for (const [nombre, valor] of Object.entries(canales)) {
     if (typeof valor !== 'number' || !Number.isFinite(valor)) continue;
     const m = nombre.toLowerCase().match(/^p(\d+)[/_:](.+?)[:.](\w+)$/);
     if (!m) continue;
-    const [, jugador, articulacion, atributo] = m;
-    const propio = POR_NOMBRE.get(articulacion.replace(/\s+/g, ''));
+    const articulacion = m[2].replace(/\s+/g, '');
+    if (NOMBRES_SOLO_TD.has(articulacion)) nombresTd = true;
+    leidos.push([m[1], articulacion, m[3], valor]);
+  }
+  const tabla = nombresTd ? POR_NOMBRE_TD : POR_NOMBRE;
+  for (const [jugador, articulacion, atributo, valor] of leidos) {
+    const propio = tabla.get(articulacion);
     if (!propio) continue;
     let delJugador = datos.get(jugador);
     if (!delJugador) datos.set(jugador, (delJugador = new Map()));
@@ -144,8 +191,18 @@ export function puntoDelCuerpo(cuerpo: Cuerpo, punto: PuntoKinect, ajusteAltura 
 export function esqueletoParaDibujar(cuerpos: Cuerpo[]) {
   const nombres = Object.keys(ARTICULACIONES);
   const indice = new Map(nombres.map((n, i) => [n, i]));
-  // Las articulaciones que faltan quedan fuera de la imagen (no se ven).
-  const puntos = cuerpos.map((c) => nombres.map((n) => c.articulaciones[n] ?? { x: -10, y: -10 }));
+  // Una articulación que falta (sin seguir, o el modo sentado, que no da piernas) se pone sobre la más
+  // cercana que sí está, subiendo por el esqueleto: su hueso queda de largo cero y no se ve. (Antes iban
+  // fuera de la imagen, y cada hueso con un extremo faltante cruzaba la pantalla como una línea larga.)
+  const puntos = cuerpos.map((c) => {
+    const a = c.articulaciones;
+    const cualquiera = Object.values(a)[0];
+    return nombres.map((n) => {
+      let actual: string | undefined = n;
+      while (actual && !a[actual]) actual = PADRE.get(actual);
+      return (actual && a[actual]) || cualquiera;
+    });
+  });
   const conexiones = HUESOS.map(([a, b]) => ({ start: indice.get(a)!, end: indice.get(b)! }));
   return { puntos, conexiones };
 }

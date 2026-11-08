@@ -19,6 +19,20 @@ export interface OpcionesPerfil {
   /** Duración de las reverbs de la música (s): las largas cuestan más. */
   reverbGrande: number;
   reverbCorta: number;
+  /** Una sola reverb (de reverbGrande) para todo: cada reverb es una convolución que corre siempre. */
+  reverbUnica: boolean;
+  /**
+   * Frecuencia de muestreo del audio (Hz; 0 = la de la placa, 44,1 o 48 kHz). Todo el audio se calcula en
+   * vivo, así que su costo es proporcional: a 32 kHz cuesta un tercio menos y sigue sonando hasta 16 kHz.
+   */
+  audioHz: number;
+  /**
+   * Drone FM (dos osciladores por voz, con modulación en cada muestra): es la capa más cara de la música.
+   * Sin él, el drone es una sierra filtrada, más simple y con la misma nota.
+   */
+  droneFm: boolean;
+  /** Margen del audio: 'playback' usa un búfer más grande, así no se corta si la CPU está ocupada (TouchDesigner). */
+  latenciaAudio: AudioContextLatencyCategory;
   /** Partículas por cada pedazo de roca rota. */
   chispas: number;
 }
@@ -30,8 +44,12 @@ export const PERFILES: Record<Perfil, OpcionesPerfil> = {
     deteccionHz: 20,
     modeloPose: 'pose_landmarker_lite.task',
     anchoVistaSuperpuesta: 480,
-    reverbGrande: 2.5,
+    reverbGrande: 2,
     reverbCorta: 0.8,
+    reverbUnica: true,
+    audioHz: 32000,
+    droneFm: false,
+    latenciaAudio: 'playback',
     chispas: 4,
   },
   completo: {
@@ -42,6 +60,10 @@ export const PERFILES: Record<Perfil, OpcionesPerfil> = {
     anchoVistaSuperpuesta: 960,
     reverbGrande: 6,
     reverbCorta: 1.4,
+    reverbUnica: false,
+    audioHz: 0,
+    droneFm: true,
+    latenciaAudio: 'interactive',
     chispas: 8,
   },
 };

@@ -24,6 +24,8 @@ import {
 // - Mezcla: música → filtro (se cierra en la pausa) → limitador ← efectos.
 
 type Tone = typeof ToneT;
+/** El drone: FM en el perfil completo, sierra filtrada en el liviano (ver armar). */
+type Drone = ToneT.PolySynth<ToneT.FMSynth> | ToneT.PolySynth<ToneT.Synth>;
 
 /** Frecuencia del filtro de la música: abierto (menús y resultado) y en la pausa ("la música baja y se filtra").
  * En el juego depende del progreso (brilloMusica). */
@@ -49,7 +51,7 @@ interface Instrumentos {
   hats: ToneT.NoiseSynth;
   palmas: ToneT.NoiseSynth;
   metal: ToneT.MetalSynth;
-  drone: ToneT.PolySynth<ToneT.FMSynth>;
+  drone: Drone;
   acid: ToneT.MonoSynth;
   stab: ToneT.PolySynth;
   ruido: ToneT.NoiseSynth;
@@ -90,7 +92,9 @@ export class AudioEngine {
     let ctx: AudioContext;
     try {
       // El AudioContext se crea y se activa acá mismo, durante el gesto; Tone.js se carga después.
-      ctx = new AudioContext({ latencyHint: 'interactive' });
+      // Frecuencia de muestreo y búfer según el perfil (perfil.ts): en el liviano, el audio cuesta mucho menos.
+      const { audioHz, latenciaAudio } = perfil();
+      ctx = new AudioContext({ latencyHint: latenciaAudio, ...(audioHz > 0 ? { sampleRate: audioHz } : {}) });
       void ctx.resume();
     } catch (e) {
       console.warn('ORBE: este navegador no tiene Web Audio', e);
@@ -347,8 +351,11 @@ function armar(T: Tone): { instrumentos: Instrumentos; listo: Promise<unknown> }
 
   // Espacios: una sala grande y oscura (drone, ruido) y una corta y metálica (claps, stabs).
   // Su duración depende del perfil: una reverb larga es lo más pesado del audio (en el liviano, más cortas).
+  // En el liviano hay una sola, de duración intermedia, y la "corta" es la misma con menos mezcla.
   const salaGrande = new T.Reverb({ decay: perfil().reverbGrande, wet: 0.45 }).connect(musica);
-  const salaCorta = new T.Reverb({ decay: perfil().reverbCorta, wet: 0.3 }).connect(musica);
+  const salaCorta = perfil().reverbUnica
+    ? new T.Gain(0.7).connect(salaGrande)
+    : new T.Reverb({ decay: perfil().reverbCorta, wet: 0.3 }).connect(musica);
   const eco = new T.FeedbackDelay({ delayTime: '8n.', feedback: 0.35, wet: 0.25 }).connect(musica);
 
   // Bombo: grave y largo; en el nivel 3 pasa por una saturación (wet según el progreso).
@@ -386,15 +393,23 @@ function armar(T: Tone): { instrumentos: Instrumentos; listo: Promise<unknown> }
     volume: -26,
   }).connect(eco);
 
-  // Drone oscuro (FM grave, ataque lento) en la sala grande.
-  const drone = new T.PolySynth(T.FMSynth, {
-    harmonicity: 0.5,
-    modulationIndex: 4,
-    oscillator: { type: 'sawtooth' },
-    envelope: { attack: 1.2, decay: 0.5, sustain: 0.8, release: 2.5 },
-    modulationEnvelope: { attack: 2, decay: 1, sustain: 0.6, release: 2 },
-    volume: -24,
-  }).connect(salaGrande);
+  // Drone oscuro (FM grave, ataque lento) en la sala grande. Es la capa más cara (unas seis voces FM
+  // sonando a la vez por el release largo): en el perfil liviano es una sierra filtrada, con la misma nota.
+  const drone: Drone = perfil().droneFm
+    ? new T.PolySynth(T.FMSynth, {
+        harmonicity: 0.5,
+        modulationIndex: 4,
+        oscillator: { type: 'sawtooth' },
+        envelope: { attack: 1.2, decay: 0.5, sustain: 0.8, release: 2.5 },
+        modulationEnvelope: { attack: 2, decay: 1, sustain: 0.6, release: 2 },
+        volume: -24,
+      }).connect(salaGrande)
+    : new T.PolySynth(T.Synth, {
+        oscillator: { type: 'sawtooth' },
+        envelope: { attack: 1.2, decay: 0.5, sustain: 0.8, release: 1.5 },
+        volume: -22,
+      }).connect(new T.Filter({ frequency: 700, type: 'lowpass', Q: 1 }).connect(salaGrande));
+  drone.maxPolyphony = 8;
 
   // Línea acid: sierra con filtro muy resonante (la apertura sube con el progreso).
   const acidSat = new T.Distortion(0.35).connect(eco);
@@ -462,7 +477,7 @@ function armar(T: Tone): { instrumentos: Instrumentos; listo: Promise<unknown> }
       bombo, saturacion, rumble, hats, palmas, metal, drone, acid, stab, ruido, ruidoFiltro,
       ping, clic, stabFx, impacto, rafaga, rafagaFiltro, chapa, zumbido,
     },
-    listo: Promise.all([salaGrande.ready, salaCorta.ready]),
+    listo: Promise.all([salaGrande.ready, salaCorta instanceof T.Reverb ? salaCorta.ready : null]),
   };
 }
 

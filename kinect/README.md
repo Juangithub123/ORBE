@@ -22,7 +22,10 @@ Se puede hacer en un proyecto nuevo o dentro de uno que ya tengas. Son tres oper
    - Activá **Color Space Positions** (posición de cada articulación en la imagen de color: canales `u` y `v`). Si tu versión no la tiene, alcanza con las posiciones en el mundo (`tx`, `ty`, `tz`): el juego las proyecta solo.
 3. Renombralo **`kinect_orbe`**. Si preferís no tocar el tuyo, poné después un **Null CHOP** (o un Select CHOP) y renombrá ese.
 
-Los canales se llaman como `p1/spine:u`, `p1/hand_l:v`, etc. El juego acepta las variantes de nombres de las distintas versiones del CHOP.
+Con el Kinect v1, el CHOP nombra cada articulación **por el hueso que termina en ella**: `p1/neck` es la cabeza (no el cuello), `p1/spine2` el centro de los hombros, `p1/spine1` la columna, `p1/root` la cadera, `clavicle_l` el hombro, `upperarm_l` el codo, `forearm_l` la muñeca, `pelvis_l` la cadera de ese lado, `thigh_l` la rodilla, `shin_l` el tobillo. Las posiciones vienen en metros (`tx`, `ty`, `tz`). El juego entiende estos nombres y también los de otras versiones (`p1/spine:u`, `p1/hand_left`…).
+
+- **Si los jugadores están sentados**, poné **Skeleton: Seated**: el Kinect v1 en *Full* inventa las piernas que no ve (salen líneas largas hacia abajo). En *Seated* solo sigue cabeza, hombros y brazos, y el juego usa los hombros como punto del jugador. Para jugar parados, volvé a *Full*.
+- **Smoothing** (pestaña del CHOP): un poco de suavizado ayuda a que el esqueleto tiemble menos. El punto del jugador además pasa por el filtro del juego.
 
 ### b) Web Server DAT → `servidor_orbe`
 
@@ -57,9 +60,15 @@ Si TouchDesigner se cierra o se corta, el juego se pausa y se reconecta solo cua
 
 ## 4. Que TouchDesigner pese lo menos posible
 
+En una PC modesta TouchDesigner puede llevarse más CPU que el juego (medido: 1,3 a 1,9 núcleos de 4 con el editor abierto), y entonces el juego y su audio se traban. Por orden de importancia:
+
+- **Un solo Kinect CHOP** (`kinect_orbe`). Si tenés otros operadores del Kinect para mirar (otro Kinect CHOP, un **Kinect TOP** con la imagen de profundidad), borralos o apagalos (*Bypass*): cada uno procesa el sensor aparte.
+- **Sin visores**: los visores de los operadores (sobre todo el de un CHOP con 140 canales dibujados como barras) se redibujan en cada cuadro. Cerralos, o mejor:
 - **Modo perform:** **F1** entra en modo perform (no dibuja el editor ni las vistas previas) y **Esc** vuelve. Para que el proyecto abra directamente así, buscá la opción de abrir en modo perform en **Dialogs → Window Placement** (el nombre exacto cambia según la versión).
 - **30 cuadros por segundo:** el Kinect da 30 por segundo; en la barra de tiempo de abajo poné **FPS = 30**.
-- **Sin imagen:** el proyecto no necesita Kinect TOP ni ningún TOP. Cerrá los visores de los operadores.
+- **Sin imagen:** el proyecto no necesita Kinect TOP ni ningún TOP.
+- **Script actualizado:** usá la última versión de [`enviar_esqueletos.py`](enviar_esqueletos.py): manda solo cuando el Kinect da un cuadro nuevo y sin los jugadores vacíos (la anterior mandaba unos 40 mensajes por segundo, repetidos).
+- **En el juego**, elegí el **modo liviano** al inicio: su audio cuesta menos de la mitad (ver la tabla del README principal).
 
 ## 5. Si algo no anda
 
