@@ -23,6 +23,30 @@ describe('leerCuerpos', () => {
     expect(cuerpos[0].articulaciones.hombros).toEqual({ x: 0.4, y: 0.3 });
   });
 
+  it('entiende los nombres del Kinect CHOP de TouchDesigner (por hueso: "neck" es la cabeza)', () => {
+    // Canales tal como los manda TouchDesigner con un Kinect v1 (posiciones en metros).
+    const canales: Record<string, number> = { p1_id: 248, 'p1:tx': 0.35, 'p1:ty': -0.64, 'p1:tz': 2 };
+    const td: Record<string, [number, number]> = {
+      root: [0, -0.2], spine1: [0, -0.1], spine2: [0, 0.2], neck: [0, 0.4],
+      clavicle_l: [-0.2, 0.18], upperarm_l: [-0.3, 0], forearm_l: [-0.35, -0.2], hand_l: [-0.36, -0.28],
+      clavicle_r: [0.2, 0.18], upperarm_r: [0.3, 0], forearm_r: [0.35, -0.2], hand_r: [0.36, -0.28],
+      pelvis_l: [-0.1, -0.25], thigh_l: [-0.12, -0.7], shin_l: [-0.12, -1.1], foot_l: [-0.12, -1.15],
+      pelvis_r: [0.1, -0.25], thigh_r: [0.12, -0.7], shin_r: [0.12, -1.1], foot_r: [0.12, -1.15],
+    };
+    for (const [n, [x, y]] of Object.entries(td)) Object.assign(canales, { [`p1/${n}:tx`]: x, [`p1/${n}:ty`]: y, [`p1/${n}:tz`]: 2 });
+    for (const n of Object.keys(td)) Object.assign(canales, { [`p2/${n}:tx`]: 0, [`p2/${n}:ty`]: 0, [`p2/${n}:tz`]: 0 });
+    const cuerpos = leerCuerpos(canales);
+    expect(cuerpos).toHaveLength(1);
+    const a = cuerpos[0].articulaciones;
+    expect(Object.keys(a)).toHaveLength(20);
+    // De arriba abajo: cabeza, hombros, columna, cadera, rodilla, pie.
+    const alturas = [a.cabeza, a.hombros, a.columna, a.cadera, a.rodillaIzq, a.pieIzq].map((p) => p.y);
+    expect([...alturas].sort((x, y) => x - y)).toEqual(alturas);
+    // El codo izquierdo está entre el hombro y la muñeca.
+    expect(a.codoIzq.x).toBeLessThan(a.hombroIzq.x);
+    expect(a.codoIzq.x).toBeGreaterThan(a.munecaIzq.x);
+  });
+
   it('un jugador sin seguir (todo en cero) no cuenta', () => {
     expect(leerCuerpos({ 'p1/spine:u': 0, 'p1/spine:v': 0, 'p2/spine:u': 0.5, 'p2/spine:v': 0.5 })).toHaveLength(1);
   });
@@ -89,5 +113,20 @@ describe('esqueletoParaDibujar', () => {
     expect(puntos).toHaveLength(1);
     expect(conexiones.length).toBeGreaterThan(10);
     expect(puntos[0].some((p) => p.x === 0.3 && p.y === 0.5)).toBe(true);
+  });
+
+  it('las articulaciones que faltan quedan sobre la más cercana (sin huesos que crucen la pantalla)', () => {
+    const { puntos, conexiones } = esqueletoParaDibujar([
+      { id: '1', articulaciones: { hombros: { x: 0.5, y: 0.3 }, hombroIzq: { x: 0.4, y: 0.32 }, cabeza: { x: 0.5, y: 0.15 } } },
+    ]);
+    for (const p of puntos[0]) {
+      expect(p.x).toBeGreaterThanOrEqual(0);
+      expect(p.y).toBeGreaterThanOrEqual(0);
+    }
+    // Ningún hueso es más largo que la distancia entre las articulaciones que sí están.
+    for (const { start, end } of conexiones) {
+      const [a, b] = [puntos[0][start], puntos[0][end]];
+      expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeLessThan(0.2);
+    }
   });
 });

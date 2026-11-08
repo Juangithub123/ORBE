@@ -23,9 +23,13 @@ type Estado = 'cuenta' | 'jugando' | 'pausa' | 'menu' | 'completo' | 'perdido';
 
 interface RocaViva {
   datos: Roca;
-  g: Phaser.GameObjects.Graphics | null; // solo las frágiles tienen su propio Graphics (para poder borrarlas)
+  /** Cada roca tiene su Graphics: así las que no están en pantalla no se dibujan (ver recortar). */
+  g: Phaser.GameObjects.Graphics | null;
   rota: boolean;
 }
+
+/** Margen (px) para mostrar rocas y monedas un poco antes de que entren en pantalla (halo, sacudón). */
+const MARGEN_RECORTE = 40;
 
 interface MonedaViva {
   datos: Moneda;
@@ -186,6 +190,7 @@ export class GameScene extends Phaser.Scene {
       audio.cambiarProgreso(progresoGlobal(this.run.nivel, getNiveles(this).length, avance));
     }
 
+    this.recortar();
     this.orbe.parpadeo = time < this.invulnerableHasta;
     this.orbe.update(delta);
 
@@ -279,16 +284,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   private crearRocas() {
-    const solidas = this.add.graphics().setDepth(2);
     this.rocas = this.nivel.rocas.map((datos) => {
-      if (datos.tipo === 'piedra') {
-        this.dibujarRoca(solidas, datos);
-        return { datos, g: null, rota: false };
-      }
       const g = this.add.graphics().setDepth(2);
       this.dibujarRoca(g, datos);
       return { datos, g, rota: false };
     });
+  }
+
+  /**
+   * Muestra solo las rocas y monedas que están en pantalla. Un Graphics de Phaser se vuelve a triangular
+   * en cada frame (los polígonos de las rocas, con earcut): sin esto se dibujaba el nivel entero, todo el tiempo.
+   */
+  private recortar() {
+    const arriba = this.cameras.main.scrollY - MARGEN_RECORTE;
+    const abajo = this.cameras.main.scrollY + CONFIG.alto + MARGEN_RECORTE;
+    for (const rv of this.rocas) rv.g?.setVisible(rv.datos.maxY >= arriba && rv.datos.minY <= abajo);
+    for (const m of this.monedas) m.vista.setVisible(m.datos.y + CONFIG.radioMoneda >= arriba && m.datos.y - CONFIG.radioMoneda <= abajo);
   }
 
   private dibujarRoca(g: Phaser.GameObjects.Graphics, r: Roca) {

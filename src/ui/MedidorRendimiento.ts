@@ -40,13 +40,24 @@ export class MedidorRendimiento {
         this.actualizar();
       }
     });
+    // Se cuentan los pasos reales del juego: game.loop.actualFps cuenta todos los cuadros de la pantalla,
+    // también los que se saltean por el tope fpsMax (con 30 de tope en una pantalla de 60 Hz, decía 60).
+    game.events.on('step', () => this.pasos++);
     setInterval(() => this.actualizar(), CADA_MS);
   }
 
+  private pasos = 0;
+  private ultimaMedicion = performance.now();
+  private fps = 0;
+
   private actualizar() {
+    const ahora = performance.now();
+    this.fps = (this.pasos * 1000) / Math.max(1, ahora - this.ultimaMedicion);
+    this.pasos = 0;
+    this.ultimaMedicion = ahora;
     this.div.style.display = CONFIG.mostrarRendimiento ? 'block' : 'none';
     if (!CONFIG.mostrarRendimiento) return;
-    const partes = [`FPS ${Math.round(this.game.loop.actualFps)}`];
+    const partes = [`FPS ${Math.round(this.fps)} (tope ${CONFIG.fpsMax})`];
     const camara = this.obtenerInput()?.estadisticasCamara;
     if (camara) partes.push(`detección ${camara.ms.toFixed(1)} ms · ${camara.porSegundo}/s`);
     partes.push(`${this.game.canvas.width}×${this.game.canvas.height}`, `modo ${perfilActual()}`);

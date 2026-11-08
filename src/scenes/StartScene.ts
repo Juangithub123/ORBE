@@ -88,8 +88,6 @@ export class StartScene extends Phaser.Scene {
     if (this.arrancando) return;
     this.arrancando = true;
 
-    // Tiene que ser acá, durante el clic o la tecla: el navegador solo deja sonar después de un gesto.
-    audio.iniciar();
     const input = getInput(this);
     // En escritorio la ventana ya se abre como se dejó (electron/main.cjs); en la web hay que pedirlo acá.
     if (!escritorio && input.config.pantallaCompleta && !this.scale.isFullscreen) {
@@ -107,6 +105,10 @@ export class StartScene extends Phaser.Scene {
     elegirPerfil(perfilElegido);
     input.aplicarAjustes({ perfil: perfilElegido });
     if (cambio) cambiarResolucion(this.game, input.config.resolucion);
+
+    // Tiene que ser acá, durante el clic o la tecla: el navegador solo deja sonar después de un gesto.
+    // Va después de elegir el perfil, que decide la frecuencia de muestreo y el búfer del audio.
+    audio.iniciar();
 
     input.start();
 
