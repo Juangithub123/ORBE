@@ -60,7 +60,7 @@ export class PauseMenuScene extends Phaser.Scene {
     this.bVolumen.setTexto(`Volumen: ${Math.round(input.config.volumen * 100)} %  [V]`);
     const conCamara = conSensor(input.modo);
     this.bCamara.habilitado = conCamara;
-    this.bCamara.setTexto(conCamara ? `Cámara: ${NOMBRE_CAMARA[input.config.camaraEnJuego]}  [C]` : 'Cámara: (solo con Manos, Pose o Kinect)');
+    this.bCamara.setTexto(conCamara ? `Cámara: ${NOMBRE_CAMARA[input.config.camaraEnJuego]}  [C]` : 'Cámara: (solo con Manos o Pose)');
     for (const b of this.botones) b.update(input, delta);
     this.orbe.update(delta);
   }

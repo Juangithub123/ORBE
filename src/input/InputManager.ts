@@ -2,7 +2,6 @@ import { CONFIG } from '../config';
 import { calcOrb, type OrbState, type Vec2 } from '../game/orb';
 import { guardarAjustes, type Ajustes, type Zona } from '../storage/settings';
 import { CameraInput, SinAccesoCamara, VideoNoArranca, cerrarCamara } from './CameraInput';
-import { KinectInput, SinKinect } from './KinectInput';
 import { CameraPreview } from './CameraPreview';
 import type { Etapa } from './carga';
 import { PanelCarga } from '../ui/PanelCarga';
@@ -69,7 +68,7 @@ export class InputManager {
     return this.modoActivo;
   }
 
-  /** Lo que detecta la cámara o el Kinect (imagen, puntos y jugadores), o null (teclado, sin cámara). */
+  /** Lo que detecta la cámara (imagen, puntos y jugadores), o null (teclado, sin cámara). */
   get vista() {
     return this.fuente?.vista ?? null;
   }
@@ -95,7 +94,7 @@ export class InputManager {
     this.reiniciarFiltros();
     const intento = ++this.intento;
     const modo = this.ajustes.modoEntrada;
-    if (modo === 'teclado' || modo === 'kinect') cerrarCamara();
+    if (modo === 'teclado') cerrarCamara();
     this.estado = 'cargando';
     this.error = '';
     const fuente = this.crearFuente(modo);
@@ -216,7 +215,6 @@ export class InputManager {
     if (this.calibrando) return ZONA_COMPLETA;
     if (this.modoActivo === 'pose') return this.ajustes.zonaPose;
     if (this.modoActivo === 'manos') return this.ajustes.zonaManos;
-    if (this.modoActivo === 'kinect') return this.ajustes.zonaKinect;
     return ZONA_COMPLETA;
   }
 
@@ -226,8 +224,6 @@ export class InputManager {
         return new HandsInput(this.ajustes);
       case 'pose':
         return new PoseInput(this.ajustes);
-      case 'kinect':
-        return new KinectInput(this.ajustes);
       default:
         return new KeyboardInput();
     }
@@ -274,7 +270,7 @@ async function estadoPermiso(): Promise<PermissionState | null> {
 const COMO_PERMITIR = 'Permitila en el candado de la barra de direcciones (Cámara → Permitir).';
 
 async function describirError(e: unknown): Promise<string> {
-  if (e instanceof SinAccesoCamara || e instanceof VideoNoArranca || e instanceof SinKinect) return e.message;
+  if (e instanceof SinAccesoCamara || e instanceof VideoNoArranca) return e.message;
   if (e instanceof DOMException) {
     if (e.name === 'NotAllowedError') {
       if (/system/i.test(e.message)) {

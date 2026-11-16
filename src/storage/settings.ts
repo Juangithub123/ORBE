@@ -2,7 +2,6 @@ import { CONFIG } from '../config';
 import type { ModoEntrada } from '../input/PlayerInput';
 import type { Resolucion } from '../pantalla';
 import type { Perfil } from '../perfil';
-import type { PuntoKinect } from '../input/kinect';
 import type { ModoNombre } from '../game/nombre';
 
 // Ajustes del dispositivo, guardados en localStorage.
@@ -28,10 +27,6 @@ export interface Ajustes {
   espejar: boolean;
   zonaManos: Zona;
   zonaPose: Zona;
-  /** Kinect: punto de cada jugador, zona de juego y servidor de TouchDesigner ('' = esta computadora, puerto kinectPuerto). */
-  puntoKinect: PuntoKinect;
-  zonaKinect: Zona;
-  kinectServidor: string;
   camaraEnJuego: CamaraEnJuego;
   /** Cómo se elige el nombre del dúo: letras que caen, teclado en pantalla o sin nombre. */
   modoNombre: ModoNombre;
@@ -45,6 +40,7 @@ export interface Ajustes {
 }
 
 const CLAVE = 'orbe.ajustes';
+const MODOS_ENTRADA: ModoEntrada[] = ['teclado', 'manos', 'pose'];
 
 export const AJUSTES_POR_DEFECTO: Ajustes = {
   modoEntrada: 'teclado',
@@ -54,9 +50,6 @@ export const AJUSTES_POR_DEFECTO: Ajustes = {
   espejar: CONFIG.espejar,
   zonaManos: { x0: 0.1, x1: 0.9, y0: 0.1, y1: 0.9 },
   zonaPose: { x0: 0.15, x1: 0.85, y0: 0.3, y1: 0.7 },
-  puntoKinect: 'columna',
-  zonaKinect: { x0: 0.15, x1: 0.85, y0: 0.3, y1: 0.7 },
-  kinectServidor: '',
   camaraEnJuego: 'superpuesta',
   modoNombre: 'caen',
   volumen: CONFIG.volumenGeneral,
@@ -71,7 +64,10 @@ export function cargarAjustes(): Ajustes {
     if (!crudo) return structuredClone(AJUSTES_POR_DEFECTO);
     // Solo se toman las claves que existen hoy (así un ajuste viejo que cambió de nombre no queda colgado).
     const guardados = Object.entries(JSON.parse(crudo)).filter(([clave]) => clave in AJUSTES_POR_DEFECTO);
-    return { ...structuredClone(AJUSTES_POR_DEFECTO), ...Object.fromEntries(guardados) };
+    const ajustes: Ajustes = { ...structuredClone(AJUSTES_POR_DEFECTO), ...Object.fromEntries(guardados) };
+    // Una entrada que ya no existe (por ejemplo, el Kinect de la 0.3) vuelve a la de por defecto.
+    if (!MODOS_ENTRADA.includes(ajustes.modoEntrada)) ajustes.modoEntrada = AJUSTES_POR_DEFECTO.modoEntrada;
+    return ajustes;
   } catch {
     return structuredClone(AJUSTES_POR_DEFECTO);
   }

@@ -41,17 +41,12 @@ export class BootScene extends Phaser.Scene {
     g.destroy();
 
     const ajustes = cargarAjustes();
-    // ?entrada=pose | manos | kinect | teclado elige el modo de entrada y lo guarda
+    // ?entrada=pose | manos | teclado elige el modo de entrada y lo guarda
     // (útil en una tablet o en la instalación, donde no hay teclado para entrar a Ajustes).
-    // ?kinect=servidor:puerto apunta a TouchDesigner en otro puerto (vacío: esta computadora, kinectPuerto).
     const params = new URLSearchParams(location.search);
     const entrada = params.get('entrada');
-    if (entrada === 'pose' || entrada === 'manos' || entrada === 'teclado' || entrada === 'kinect') {
+    if (entrada === 'pose' || entrada === 'manos' || entrada === 'teclado') {
       ajustes.modoEntrada = entrada;
-      guardarAjustes(ajustes);
-    }
-    if (params.has('kinect')) {
-      ajustes.kinectServidor = params.get('kinect') ?? '';
       guardarAjustes(ajustes);
     }
     this.registry.set('ajustes', ajustes);

@@ -19,10 +19,8 @@ export const AJUSTES_CONTROLABLES = [
   'modoEntrada',
   'espejar',
   'puntoPose',
-  'puntoKinect',
   'zonaManos',
   'zonaPose',
-  'zonaKinect',
   'camaraEnJuego',
   'modoNombre',
   'volumen',
@@ -42,7 +40,7 @@ export interface VistaRemota {
   puntos: NormPos[][];
   conexiones: { start: number; end: number }[];
   jugadores: NormPos[];
-  /** Ancho / alto de la imagen de la cámara (el Kinect da 4:3). */
+  /** Ancho / alto de la imagen de la cámara (4:3 si no hay imagen). */
   aspecto: number;
 }
 
@@ -105,10 +103,9 @@ export function limitarZona(z: Zona): Zona {
 }
 
 /** Qué ajuste guarda la zona de juego de cada entrada (el teclado no tiene). */
-export function claveZona(modo: ModoEntrada | null): 'zonaManos' | 'zonaPose' | 'zonaKinect' | null {
+export function claveZona(modo: ModoEntrada | null): 'zonaManos' | 'zonaPose' | null {
   if (modo === 'manos') return 'zonaManos';
   if (modo === 'pose') return 'zonaPose';
-  if (modo === 'kinect') return 'zonaKinect';
   return null;
 }
 

@@ -1,6 +1,6 @@
 # ORBE – La salida es colectiva
 
-Arcade cooperativo para dos jugadores que juegan con el cuerpo. La cámara (o un Kinect v1, para la videoinstalación) sigue a los dos (dos manos de una persona, o dos personas enteras) y entre ellos aparece un **orbe**: está en el punto medio y es **más grande cuanto más cerca están**. Juntos tienen que guiarlo hacia arriba por un nivel que avanza solo, esquivando rocas, rompiendo las frágiles (hace falta un orbe grande, o sea, estar cerca) y juntando monedas, hasta la meta.
+Arcade cooperativo para dos jugadores que juegan con el cuerpo. La cámara sigue a los dos (dos manos de una persona, o dos personas enteras) y entre ellos aparece un **orbe**: está en el punto medio y es **más grande cuanto más cerca están**. Juntos tienen que guiarlo hacia arriba por un nivel que avanza solo, esquivando rocas, rompiendo las frágiles (hace falta un orbe grande, o sea, estar cerca) y juntando monedas, hasta la meta.
 
 Es la versión web y de escritorio de un juego que primero se hizo en TouchDesigner (las capturas de referencia están en `docs/referencias/`).
 
@@ -31,7 +31,7 @@ Agregados después:
 - Filtro **One Euro** para la captura, centro de la palma, torso según visibilidad, modelo de pose "full" en el modo completo.
 - Pausa con Esc (seguir, volumen, cámara, volver al menú).
 - **Versión de escritorio** con Electron: instalador y portable de Windows, macOS y Linux, modo kiosco, selector de webcam, actualización automática.
-- **Kinect v1** para la videoinstalación, con TouchDesigner como puente: ver [`kinect/README.md`](kinect/README.md).
+- El modo **Kinect v1** (con TouchDesigner como puente) se sacó en la 0.3.2 porque no hace falta por ahora: está en la versión 0.3.1 (tag `v0.3.1`) por si se vuelve a necesitar.
 
 Probado con cámara simulada en navegadores sin GPU (Playwright). **Falta probar a fondo con cámaras y GPU reales** (la tablet Android y la PC con RTX 3060): ver [Pendientes](#pendientes).
 
@@ -73,7 +73,7 @@ Game lanza encima: Pause (falta un jugador) y PauseMenu (Esc)
 
 El juego solo conoce el `InputManager`. Por cada frame:
 
-1. **Fuente** (`PlayerInput`): `KeyboardInput` (WASD = P1, flechas = P2, P simula que falta uno), `HandsInput` o `PoseInput` (ambas heredan de `CameraInput`), o `KinectInput` (esqueletos de un Kinect v1 que manda TouchDesigner por WebSocket; lectura en `kinect.ts`, guía en `kinect/README.md`).
+1. **Fuente** (`PlayerInput`): `KeyboardInput` (WASD = P1, flechas = P2, P simula que falta uno), `HandsInput` o `PoseInput` (ambas heredan de `CameraInput`)).
 2. Los jugadores se ordenan por x (P1 siempre a la izquierda).
 3. **Filtro One Euro** (`unoEuro.ts`) por jugador, una vez por cada detección nueva: saca el temblor sin agregar retardo en movimientos rápidos.
 4. **Zona de juego** (calibrada en Ajustes): la parte de la imagen de la cámara que ocupa toda la pantalla, para no tener que moverse tanto.
@@ -118,7 +118,7 @@ Todo se sintetiza en vivo con **Tone.js** (no hay archivos de audio). `musica.ts
 
 Además, en los dos: máximo 60 cuadros por segundo (`fpsMax`), la pantalla no se apaga (Wake Lock), la vista de la cámara se redibuja solo con imágenes nuevas y en el nivel solo se dibujan las rocas y monedas que están en pantalla. La lógica siempre trabaja en 1280×720: con más resolución, la cámara de Phaser hace zoom (`pantalla.ts`).
 
-**Dónde se va la CPU** (medido en la PC de la instalación, AMD A8-9600 de 4 hilos + GTX 1060, con TouchDesigner y el Kinect andando): el audio es lo más caro del juego, porque Tone.js calcula todo en vivo y cada señal y envolvente es un nodo que corre siempre, suene o no. En el modo completo el audio usaba ~80% de un núcleo (el drone FM ~25%, las dos reverbs ~17%, y ~26% el costo fijo de Tone.js); en el liviano, ~36%. El dibujo usa ~30% y TouchDesigner, 1,3 a 1,9 núcleos (ver [`kinect/README.md`](kinect/README.md), sección 4).
+**Dónde se va la CPU** (medido en la PC de la instalación, AMD A8-9600 de 4 hilos + GTX 1060, con TouchDesigner andando): el audio es lo más caro del juego, porque Tone.js calcula todo en vivo y cada señal y envolvente es un nodo que corre siempre, suene o no. En el modo completo el audio usaba ~80% de un núcleo (el drone FM ~25%, las dos reverbs ~17%, y ~26% el costo fijo de Tone.js); en el liviano, ~36%. El dibujo usa ~30% y TouchDesigner, 1,3 a 1,9 núcleos (ver [`docs/guia-rendimiento-instalacion.md`](docs/guia-rendimiento-instalacion.md)).
 
 ### Ajustes, parámetros y guardado
 
@@ -157,11 +157,10 @@ public/
   levels/              Niveles (.tmj) y proyecto de Tiled
   mediapipe/models/    Modelos de MediaPipe (manos, pose lite y full)
   mediapipe/wasm/      Motor de MediaPipe (se copia de node_modules al compilar; no está en git)
-kinect/                Kinect v1 con TouchDesigner: guía y scripts para pegar en el proyecto de TouchDesigner
 electron/              Versión de escritorio: main.cjs (ventana, protocolo, permisos, kiosco, actualizaciones) y preload.cjs
 build/                 Ícono y agregados del instalador de Windows
 tests/                 Tests (Vitest) de la lógica pura
-scripts/               Copia del wasm de MediaPipe y simulador del Kinect
+scripts/               Copia del wasm de MediaPipe
 .github/workflows/     Publicación web (pages.yml) y de escritorio (escritorio.yml)
 ```
 
@@ -179,7 +178,6 @@ npm run dev            # juego en el navegador con recarga automática (http://l
 npm test               # tests
 npm run typecheck      # chequeo de tipos
 npm run build          # compila la versión web (dist/)
-npm run kinect:simular # simulador del Kinect (hace de TouchDesigner) para probar el modo Kinect
 
 npm run escritorio         # compila y abre la versión de escritorio
 npm run escritorio:kiosco  # lo mismo, en modo kiosco
@@ -188,7 +186,7 @@ npm run dist:mac           # .dmg (en macOS)
 npm run dist:linux         # AppImage (en Linux)
 ```
 
-**Parámetros en la URL** (web): `?entrada=pose|manos|kinect|teclado`, `?kinect=servidor:puerto`, `?perfil=liviano|completo`, `?nivel=N` (arranca en ese nivel con un dúo de prueba que no entra al ranking).
+**Parámetros en la URL** (web): `?entrada=pose|manos|teclado`, `?perfil=liviano|completo`, `?nivel=N` (arranca en ese nivel con un dúo de prueba que no entra al ranking).
 
 **Atajos de teclado:** F2 panel de parámetros · F4 ventana de control · F3 medidor de rendimiento · Esc pausa / volver · en el juego, F1 depuración, N pasar de nivel, G invulnerable, 1 reiniciar · en modo teclado, P simula que falta un jugador · en escritorio, F11 pantalla completa, Ctrl+Q salir, Ctrl+Shift+I herramientas de desarrollo.
 
@@ -241,7 +239,6 @@ En cada push a una rama que no sea `main`, el mismo workflow arma los tres siste
 - Más niveles y balance (velocidades, vidas, frecuencia de letras en el nombre).
 - Firma de código (Windows y macOS) si se distribuye a más gente.
 - Elegir la pantalla del kiosco desde Ajustes (hoy: la externa automática o `--pantalla=N`).
-- Modo Kinect: probado con el sensor y TouchDesigner reales (los nombres de las articulaciones del Kinect CHOP están en `kinect.ts`, `ARTICULACIONES_TD`). Falta jugarlo de punta a punta con dos personas paradas y calibrar la zona en el lugar. Alternativa futura: [Kinect-Remold](https://github.com/Spidoug/Kinect-Remold) (runtime nuevo con WebSocket propio; hoy sigue a una sola persona por defecto).
 
 ## Para seguir con Claude Code en una sesión local
 

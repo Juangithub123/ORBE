@@ -1,4 +1,4 @@
-// Interfaz común de todas las fuentes de entrada (teclado, Manos, Pose y Kinect).
+// Interfaz común de todas las fuentes de entrada (teclado, Manos y Pose).
 
 import type { VistaCamara } from './CameraInput';
 
@@ -17,10 +17,10 @@ export interface PlayerInput {
    * `t` (solo con cámara): momento de la detección (ms, performance.now); cambia con cada detección nueva.
    */
   read(): { players: NormPos[]; t?: number };
-  /** Con cámara o Kinect: lo que dibuja la vista de la cámara (puntos, esqueleto y, si hay, la imagen). */
+  /** Con cámara: lo que dibuja la vista de la cámara (puntos, esqueleto y, si hay, la imagen). */
   readonly vista?: VistaCamara | null;
-  /** Con cámara o Kinect: para el medidor de rendimiento. */
+  /** Con cámara: para el medidor de rendimiento. */
   readonly estadisticas?: { ms: number; porSegundo: number };
 }
 
-export type ModoEntrada = 'teclado' | 'manos' | 'pose' | 'kinect';
+export type ModoEntrada = 'teclado' | 'manos' | 'pose';

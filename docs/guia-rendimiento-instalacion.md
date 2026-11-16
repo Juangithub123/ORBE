@@ -1,5 +1,7 @@
 # Guía de rendimiento: ORBE + TouchDesigner (Kinect) + Handtrack en la misma PC
 
+> **Nota (0.3.2):** el modo Kinect se sacó del juego por ahora (está en la 0.3.1, tag `v0.3.1`). Lo de TouchDesigner y el Kinect de esta guía vale solo si se lo vuelve a usar.
+
 Objetivo: las tres cosas andando a la vez, cada una en su pantalla, a **25-30 cuadros por segundo** estables.
 
 PC medida (noviembre 2026): **AMD A8-9600** (4 núcleos, el límite real) · **GTX 1060 6 GB** (le sobra) · 8 GB de RAM.
@@ -26,7 +28,6 @@ Handtrack con los ajustes: cámara 30 fps · render 30 fps · detección ~16/s (
 **ORBE** (se guarda en la PC, no hay que repetirlo):
 - Modo **liviano**: audio a 32 kHz, una sola reverb y un drone simple (el audio pasó de ~78% a ~36% de un núcleo).
 - **Tope de 30 cuadros por segundo** (`fpsMax = 30` en el panel ⚙). Se puede volver a 60 desde el panel si la PC queda libre.
-- Esqueleto del Kinect arreglado (ver [`kinect/README.md`](../kinect/README.md)).
 
 **Handtrack** (Rendimiento, en la ventana de controles; se guarda solo):
 - Resolución de los efectos 0,75 · tope de render **30** · tope de inferencias **20** · imagen para los modelos **640 px** · preview de cámara pausado.
@@ -54,11 +55,10 @@ Ojo: el Kinect v1 y una webcam en el mismo puerto/controlador USB 2.0 pueden pel
 
 ### 3. TouchDesigner
 
-Detalle en [`kinect/README.md`](../kinect/README.md), sección 4. Lo principal:
+Lo principal:
 - **Un solo Kinect CHOP.** Borrá o poné en *Bypass* el Kinect TOP (`kinect2`) y el CHOP de más (`kinect1`).
 - **Modo perform** (F1) o, como mínimo, sin visores abiertos.
 - **FPS = 30** en la barra de tiempo.
-- Pegá el `enviar_esqueletos.py` nuevo en el Execute DAT.
 
 ### 4. Handtrack: uno o dos modelos, no más
 

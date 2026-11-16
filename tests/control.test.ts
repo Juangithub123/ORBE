@@ -5,7 +5,7 @@ const ZONA = { x0: 0.2, x1: 0.8, y0: 0.3, y1: 0.7 };
 
 describe('filtrarAjustes', () => {
   it('deja solo los ajustes controlables', () => {
-    const r = filtrarAjustes({ espejar: true, camaraId: 'x', kinectServidor: 'otro:1', modoNombre: 'teclado' });
+    const r = filtrarAjustes({ espejar: true, camaraId: 'x', perfil: 'completo', modoNombre: 'teclado' });
     expect(r).toEqual({ espejar: true, modoNombre: 'teclado' });
   });
 
@@ -23,10 +23,9 @@ describe('limitarZona', () => {
 });
 
 describe('claveZona', () => {
-  it('cada entrada con sensor tiene su zona; el teclado no', () => {
+  it('cada entrada con cámara tiene su zona; el teclado no', () => {
     expect(claveZona('pose')).toBe('zonaPose');
     expect(claveZona('manos')).toBe('zonaManos');
-    expect(claveZona('kinect')).toBe('zonaKinect');
     expect(claveZona('teclado')).toBeNull();
   });
 });

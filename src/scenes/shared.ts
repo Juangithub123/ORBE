@@ -1,7 +1,6 @@
 import type * as Phaser from 'phaser';
 import type { InputManager } from '../input/InputManager';
 import type { ModoEntrada } from '../input/PlayerInput';
-import type { PuntoKinect } from '../input/kinect';
 import type { CamaraEnJuego } from '../storage/settings';
 import type { RunState } from '../game/RunState';
 import type { ModoNombre } from '../game/nombre';
@@ -29,21 +28,10 @@ export const NOMBRE_MODO: Record<ModoEntrada, string> = {
   pose: 'Pose (2 personas)',
   manos: 'Manos (1 persona)',
   teclado: 'Teclado',
-  kinect: 'Kinect (2 personas)',
 };
 
 /** Modos que usan una cámara o un sensor (calibración, vista de la cámara). */
-export const conSensor = (modo: ModoEntrada | null) => modo === 'manos' || modo === 'pose' || modo === 'kinect';
-
-/** Nombres del punto del Kinect en Ajustes. */
-export const NOMBRE_PUNTO_KINECT: Record<PuntoKinect, string> = {
-  columna: 'columna (abajo del pecho)',
-  hombros: 'centro de los hombros',
-  cadera: 'cadera',
-  cabeza: 'cabeza',
-  mano: 'mano más alta',
-};
-export const PUNTOS_KINECT = Object.keys(NOMBRE_PUNTO_KINECT) as PuntoKinect[];
+export const conSensor = (modo: ModoEntrada | null) => modo === 'manos' || modo === 'pose';
 
 /** Nombres de las formas de elegir el nombre del dúo (en el orden en que se recorren en Ajustes). */
 export const NOMBRE_MODO_NOMBRE: Record<ModoNombre, string> = {

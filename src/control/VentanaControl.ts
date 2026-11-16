@@ -1,8 +1,7 @@
 import { CONFIG } from '../config';
 import type { ModoEntrada } from '../input/PlayerInput';
-import type { PuntoKinect } from '../input/kinect';
 import type { ModoNombre } from '../game/nombre';
-import { NOMBRE_CAMARA, NOMBRE_MODO, NOMBRE_MODO_NOMBRE, NOMBRE_PUNTO_KINECT } from '../scenes/shared';
+import { NOMBRE_CAMARA, NOMBRE_MODO, NOMBRE_MODO_NOMBRE } from '../scenes/shared';
 import { cargarParametros } from '../storage/parametros';
 import { AJUSTES_POR_DEFECTO, type Ajustes, type CamaraEnJuego, type Zona } from '../storage/settings';
 import { PanelParametros } from '../ui/PanelParametros';
@@ -30,7 +29,7 @@ const ESCENAS: Record<string, string> = {
   Leaderboard: 'ranking',
 };
 
-const MODOS: ModoEntrada[] = ['pose', 'manos', 'kinect', 'teclado'];
+const MODOS: ModoEntrada[] = ['pose', 'manos', 'teclado'];
 /** Sin estado del juego en este tiempo, se avisa que no hay conexión (con la ventana del juego minimizada,
  * el navegador espacia sus mensajes, así que hay margen). */
 const SIN_JUEGO_MS = 4000;
@@ -157,7 +156,7 @@ class VentanaControl {
           <p class="nota">Arrastrá el rectángulo (o sus bordes y esquinas): lo que queda adentro ocupa toda la pantalla del juego.
             Se aplica al instante.</p>
           <canvas data-id="lienzo" width="560" height="420"></canvas>
-          <p class="nota" data-id="sinZona" hidden>Con el teclado no hay zona de juego: elegí una entrada con cámara o Kinect.</p>
+          <p class="nota" data-id="sinZona" hidden>Con el teclado no hay zona de juego: elegí Pose o Manos.</p>
           <div class="c-fila">
             <span data-id="zonaTexto" class="nota"></span>
             <button data-accion="zonaToda">Toda la imagen</button>
@@ -252,8 +251,7 @@ class VentanaControl {
     el.trackeo.addEventListener('change', () => this.ajustar({ camaraEnJuego: el.trackeo.value as CamaraEnJuego }));
     el.espejar.addEventListener('change', () => this.ajustar({ espejar: el.espejar.checked }));
     el.punto.addEventListener('change', () => {
-      if (this.estado?.ajustes.modoEntrada === 'kinect') this.ajustar({ puntoKinect: el.punto.value as PuntoKinect });
-      else this.ajustar({ puntoPose: el.punto.value as Ajustes['puntoPose'] });
+      this.ajustar({ puntoPose: el.punto.value as Ajustes['puntoPose'] });
     });
     el.verImagen.checked = this.preferencias.imagen;
     el.verImagen.addEventListener('change', () => {
@@ -396,21 +394,18 @@ class VentanaControl {
     ponerValor(el.volumen, String(a.volumen));
     el.volumenTexto.textContent = `${Math.round(a.volumen * 100)} %`;
 
-    // Punto de cada jugador: solo en Pose y Kinect.
-    const opcionesPunto: [string, string][] =
-      a.modoEntrada === 'kinect'
-        ? Object.entries(NOMBRE_PUNTO_KINECT)
-        : [
-            ['torso', 'centro del torso'],
-            ['muneca', 'muñeca más alta'],
-          ];
-    el.filaPunto.hidden = a.modoEntrada !== 'pose' && a.modoEntrada !== 'kinect';
+    // Punto de cada jugador: solo en Pose.
+    const opcionesPunto: [string, string][] = [
+      ['torso', 'centro del torso'],
+      ['muneca', 'muñeca más alta'],
+    ];
+    el.filaPunto.hidden = a.modoEntrada !== 'pose';
     const html = opciones(opcionesPunto);
     if (el.punto.dataset.opciones !== html) {
       el.punto.innerHTML = html;
       el.punto.dataset.opciones = html;
     }
-    ponerValor(el.punto, a.modoEntrada === 'kinect' ? a.puntoKinect : a.puntoPose);
+    ponerValor(el.punto, a.puntoPose);
 
     const error = e.estadoEntrada === 'error';
     el.reintentar.hidden = !error || !conSensor;
