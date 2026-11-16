@@ -1,4 +1,5 @@
-# Versión de escritorio: Windows (instalador + portable), macOS (.dmg) y Linux (AppImage).
+# Versión de escritorio: Windows (instalador, portable y .zip), macOS (.dmg) y Linux (AppImage),
+# más el .zip de la versión web para itch.io.
 # - En cada push a una rama que no sea main: solo arma, y deja los archivos para bajar en la ejecución de Actions.
 # - Para publicar en GitHub Releases la versión de package.json, cualquiera de las dos:
 #     · en GitHub: Actions → "Versión de escritorio" → Run workflow (en main) → marcar "publicar";
@@ -77,6 +78,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           # Sin certificado de firma: no se firma (en macOS hay que abrirla con clic derecho → Abrir la primera vez).
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # Versión web para itch.io (rutas relativas), en un .zip con index.html en la raíz.
+      - name: Armar el .zip web para itch.io
+        if: runner.os == 'Linux'
+        run: npm run build:itch
+      - name: Subir el .zip web al borrador
+        if: ${{ runner.os == 'Linux' && (startsWith(github.ref, 'refs/tags/v') || inputs.publicar) }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ needs.preparar.outputs.tag }}" release/ORBE-*-web-itch.zip --clobber
       - name: Dejar los archivos para bajar
         if: ${{ !(startsWith(github.ref, 'refs/tags/v') || inputs.publicar) }}
         uses: actions/upload-artifact@v4
@@ -86,6 +96,7 @@ jobs:
             release/*.exe
             release/*.dmg
             release/*.AppImage
+            release/*.zip
           retention-days: 14
 
   publicar:

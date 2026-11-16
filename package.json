@@ -14,6 +14,8 @@
     "build": "tsc --noEmit && vite build",
     "prebuild:electron": "node scripts/preparar-mediapipe.mjs",
     "build:electron": "tsc --noEmit && vite build --mode electron",
+    "prebuild:itch": "node scripts/preparar-mediapipe.mjs",
+    "build:itch": "tsc --noEmit && vite build --mode itch && node scripts/zip.mjs dist-itch release/ORBE-{version}-web-itch.zip",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",

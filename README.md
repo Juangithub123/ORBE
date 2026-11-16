@@ -178,10 +178,11 @@ npm run dev            # juego en el navegador con recarga automática (http://l
 npm test               # tests
 npm run typecheck      # chequeo de tipos
 npm run build          # compila la versión web (dist/)
+npm run build:itch     # versión web para itch.io: release/ORBE-<versión>-web-itch.zip
 
 npm run escritorio         # compila y abre la versión de escritorio
 npm run escritorio:kiosco  # lo mismo, en modo kiosco
-npm run dist:win           # arma el instalador y el portable de Windows en release/ (hay que correrlo en Windows)
+npm run dist:win           # arma el instalador, el portable y el .zip de Windows en release/ (hay que correrlo en Windows)
 npm run dist:mac           # .dmg (en macOS)
 npm run dist:linux         # AppImage (en Linux)
 ```
@@ -195,6 +196,12 @@ npm run dist:linux         # AppImage (en Linux)
 ## Versión web
 
 Cada push a `main` publica en GitHub Pages (`.github/workflows/pages.yml`): https://juangithub123.github.io/ORBE/
+
+### itch.io
+
+- **Juego web:** subir `ORBE-<versión>-web-itch.zip` (está en cada versión de Releases, o `npm run build:itch`) como archivo HTML ("This file will be played in the browser"). Tamaño de la ventana sugerido: 1280 × 720, con el botón de pantalla completa.
+- **La cámara dentro de la página de itch.io:** el navegador bloquea la cámara en un marco de otro sitio salvo que la página lo permita. Si itch.io no la deja usar, el juego no carga los modelos y muestra un aviso con un enlace para **abrirlo en una pestaña aparte**, donde sí anda (mientras, se juega con el teclado). Hay que probarlo en itch.io mismo. La ventana de control (F4) también puede quedar bloqueada dentro del marco.
+- **Descargable para Windows:** subir `ORBE-<versión>-windows.zip` (la carpeta del juego: se descomprime y se abre `ORBE.exe`). También se pueden subir el instalador, el `.dmg` y el AppImage. La actualización automática sigue buscando en GitHub Releases.
 
 ## Versión de escritorio (Electron)
 

@@ -4,3 +4,4 @@ release/
 *.log
 .vite/
 public/mediapipe/wasm/
+dist-itch/

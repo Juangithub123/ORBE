@@ -19,6 +19,10 @@ win:
       arch: [x64]
     - target: portable
       arch: [x64]
+    # Carpeta del juego comprimida (para subir a itch.io o descomprimir y abrir ORBE.exe, sin instalar).
+    - target: zip
+      arch: [x64]
+  artifactName: ORBE-${version}-windows.${ext}
   icon: build/icon.png
 nsis:
   oneClick: false

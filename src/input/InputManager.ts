@@ -5,6 +5,7 @@ import { CameraInput, SinAccesoCamara, VideoNoArranca, cerrarCamara } from './Ca
 import { CameraPreview } from './CameraPreview';
 import type { Etapa } from './carga';
 import { PanelCarga } from '../ui/PanelCarga';
+import { CamaraBloqueadaEnMarco, camaraBloqueadaPorMarco, enMarco, mostrarAvisoMarco } from '../ui/AvisoMarco';
 import { FiltroUnoEuro } from './unoEuro';
 import { HandsInput } from './HandsInput';
 import { KeyboardInput } from './KeyboardInput';
@@ -101,6 +102,8 @@ export class InputManager {
     this.fuente = fuente;
     this.carga = fuente instanceof CameraInput ? Object.values(fuente.etapas) : [];
     try {
+      // Dentro de una página que no deja usar la cámara (itch.io, por ejemplo) ni se cargan los modelos.
+      if (modo !== 'teclado' && camaraBloqueadaPorMarco()) throw new CamaraBloqueadaEnMarco();
       await fuente.start();
     } catch (error) {
       console.warn('ORBE: no se pudo iniciar la entrada', modo, error);
@@ -114,6 +117,8 @@ export class InputManager {
       this.modoActivo = 'teclado';
       this.estado = 'error';
       this.error = await describirError(error);
+      // En un marco, si la cámara no se pudo usar por permisos, el aviso ofrece abrir el juego aparte.
+      mostrarAvisoMarco(error instanceof CamaraBloqueadaEnMarco || (enMarco() && esPermiso(error)));
       this.preview.actualizar();
       return { ok: false, modo: 'teclado', error };
     }
@@ -124,6 +129,7 @@ export class InputManager {
     }
     this.modoActivo = modo;
     this.estado = 'lista';
+    mostrarAvisoMarco(false);
     this.preview.actualizar();
     return { ok: true, modo };
   }
@@ -269,8 +275,14 @@ async function estadoPermiso(): Promise<PermissionState | null> {
 
 const COMO_PERMITIR = 'Permitila en el candado de la barra de direcciones (Cámara → Permitir).';
 
+/** Error de permiso de cámara (negado por la persona, por el navegador o por la página que contiene al juego). */
+function esPermiso(e: unknown) {
+  return e instanceof DOMException && (e.name === 'NotAllowedError' || e.name === 'SecurityError');
+}
+
 async function describirError(e: unknown): Promise<string> {
-  if (e instanceof SinAccesoCamara || e instanceof VideoNoArranca) return e.message;
+  if (e instanceof SinAccesoCamara || e instanceof VideoNoArranca || e instanceof CamaraBloqueadaEnMarco) return e.message;
+  if (enMarco() && esPermiso(e)) return new CamaraBloqueadaEnMarco().message;
   if (e instanceof DOMException) {
     if (e.name === 'NotAllowedError') {
       if (/system/i.test(e.message)) {
