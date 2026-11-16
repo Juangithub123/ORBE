@@ -26,7 +26,7 @@ export const ESCENAS = {
 
 export const NOMBRE_MODO: Record<ModoEntrada, string> = {
   pose: 'Pose (2 personas)',
-  manos: 'Manos (1 persona)',
+  manos: 'Manos (2 manos)',
   teclado: 'Teclado',
 };
 

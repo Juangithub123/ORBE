@@ -1,6 +1,6 @@
 # ORBE – La salida es colectiva
 
-Arcade cooperativo para dos jugadores que juegan con el cuerpo. La cámara sigue a los dos (dos manos de una persona, o dos personas enteras) y entre ellos aparece un **orbe**: está en el punto medio y es **más grande cuanto más cerca están**. Juntos tienen que guiarlo hacia arriba por un nivel que avanza solo, esquivando rocas, rompiendo las frágiles (hace falta un orbe grande, o sea, estar cerca) y juntando monedas, hasta la meta.
+Arcade cooperativo para dos jugadores que juegan con el cuerpo. La cámara sigue a los dos (dos personas enteras, o dos manos: una de cada persona, por ejemplo sentadas frente a la pantalla, o las dos de una sola) y entre ellos aparece un **orbe**: está en el punto medio y es **más grande cuanto más cerca están**. Juntos tienen que guiarlo hacia arriba por un nivel que avanza solo, esquivando rocas, rompiendo las frágiles (hace falta un orbe grande, o sea, estar cerca) y juntando monedas, hasta la meta.
 
 Es la versión web y de escritorio de un juego que primero se hizo en TouchDesigner (las capturas de referencia están en `docs/referencias/`).
 
